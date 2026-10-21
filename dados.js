@@ -2,7 +2,7 @@
 // Não faz chamadas de rede — é só dado estático embutido.
 
 // Prefixo fixo da organização no GitHub. Único lugar a mudar se o org mudar.
-var GITHUB_ORG = "cie-cefet-mg";
+var GITHUB_ORG = "ufci-mg";
 
 // Domínio do e-mail institucional. Único lugar a mudar se o domínio mudar
 // (ex.: por causa da transformação em UFCI — ver CLAUDE.md na raiz do pacote).
