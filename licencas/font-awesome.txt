@@ -1,0 +1,18 @@
+Ícones do Font Awesome Free
+
+Os ícones "floppy-disk" e "folder-open" (estilo solid), usados nos botões Salvar rascunho e
+Carregar rascunho de index.html, são do Font Awesome Free 6.5.2.
+
+  Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com
+  License - https://fontawesome.com/license/free
+  Icons: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/), Fonts: SIL OFL 1.1, Code: MIT License
+  Copyright 2024 Fonticons, Inc.
+
+Fonte dos arquivos: pacote npm @fortawesome/fontawesome-free@6.5.2, pasta svgs/solid/.
+
+Alterações feitas (exigência da CC BY 4.0 de indicá-las): os SVGs foram embutidos no HTML sem o
+atributo xmlns e sem o comentário de licença que os acompanha, e receberam fill="currentColor",
+aria-hidden e focusable="false". A forma (o caminho do desenho) não foi modificada.
+
+Os endereços acima ficam neste arquivo, e não em index.html, de propósito: o CI de isolamento
+de rede (sem-rede.yml) barra qualquer endereço http(s) na página.

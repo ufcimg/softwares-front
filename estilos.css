@@ -67,7 +67,10 @@ header.top p{
   background: var(--paper);
   border-bottom: 1px solid var(--line);
 }
-.draft-toolbar .btn{ flex: 0 0 auto; }
+.draft-toolbar .btn{ flex: 0 0 auto; font-family: inherit; font-size: 0.875rem; }
+/* Botão com ícone à esquerda (SVG embutido, herda a cor do texto). */
+.btn-icone{ display: inline-flex; align-items: center; gap: 8px; }
+.btn-icone .icone{ width: 1.05em; height: 1.05em; flex: 0 0 auto; }
 .draft-toolbar .draft-feedback{
   font-size: 0.8rem;
   color: var(--ink-faint);

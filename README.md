@@ -101,3 +101,8 @@ carrega `versao_fluxo` justamente para a extensão do NIT (que lê esse PDF do
 lado do SIPAC) saber quando o formato mudou — qualquer alteração de campo
 aqui precisa ser avisada a quem mantém a extensão antes de PDFs novos
 começarem a circular.
+
+## Licenças de terceiros
+
+- **pdf-lib** (MIT), embutida em `index.html` entre `BEGIN VENDOR` e `END VENDOR`, com hash fixado em `.github/vendor-pdf-lib.sha256`.
+- **Ícones do Font Awesome Free** (CC BY 4.0), embutidos como SVG nos botões de rascunho. Atribuição e alterações em [`licencas/font-awesome.txt`](licencas/font-awesome.txt).
