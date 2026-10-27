@@ -5,7 +5,11 @@
 #
 # Dois checks:
 #   1. Em nenhum dos quatro arquivos (com o bloco vendorizado removido de
-#      docs/index.html primeiro), nenhuma referência de rede.
+#      index.html primeiro), nenhuma referência que carregue ou envie algo para
+#      fora. Um link comum de citação, <a href="https://..." rel="noopener
+#      noreferrer">, é permitido: só leva a pessoa a outro lugar quando ela clica.
+#      A regra mora em .github/scripts/verificar-sem-rede.py (a mesma que a suíte
+#      local usa, com testes em testes/sem_rede.py).
 #   2. Dentro do bloco vendorizado, o conteúdo não muda sem que alguém
 #      atualize o hash de referência no mesmo commit — ninguém revisa 500KB
 #      de código minificado linha a linha num diff, então uma alteração
@@ -29,20 +33,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Sem referência de rede fora do bloco vendorizado
-        run: |
-          set -euo pipefail
-          sed '/BEGIN VENDOR/,/END VENDOR/d' index.html > /tmp/sem-vendor.html
-          # ALLOW-REDE-LINK-CITACAO: as duas únicas linhas de dados.js com uma
-          # URL de citação estática (o professor clica, nada é carregado pela
-          # página) — ver o comentário ao lado delas em dados.js.
-          grep -v 'ALLOW-REDE-LINK-CITACAO' dados.js > /tmp/dados-sem-links-citacao.js
-          if grep -EnI 'https?://|fetch\(|XMLHttpRequest|import\(|sendBeacon|new Worker|WebSocket|EventSource' \
-              /tmp/sem-vendor.html /tmp/dados-sem-links-citacao.js app.js estilos.css; then
-            echo "" >&2
-            echo "Referência de rede encontrada fora do bloco vendorizado — estes arquivos precisam continuar 100% offline." >&2
-            exit 1
-          fi
-          echo "Nenhuma referência de rede fora do bloco vendorizado."
+        run: python3 .github/scripts/verificar-sem-rede.py .
 
       - name: Hash do bloco vendorizado confere
         run: |
