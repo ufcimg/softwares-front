@@ -1733,7 +1733,6 @@
   $("link-tabela-area").href = LINK_TABELA_CAMPO_APLICACAO;
   $("link-tabela-tipo").href = LINK_TABELA_TIPO_PROGRAMA;
   $("link-integra").href = LINK_CIE_PROGRAMA_COMPUTADOR;
-  $("link-politica-inovacao").href = LINK_POLITICA_INOVACAO;
 
   renderTrlPicker();
   construirTiposDeInteresse();

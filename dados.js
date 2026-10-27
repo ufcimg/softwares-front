@@ -62,12 +62,13 @@ var TRL_NIVEIS = [
 // Links oficiais das tabelas de classificação do INPI, verificados em 2026-09-21.
 // Se o INPI reorganizar o site e o link quebrar, é só trocar aqui.
 //
-// Estas duas linhas são a ÚNICA exceção conhecida ao isolamento de rede deste
-// app: são links estáticos para o usuário clicar e abrir numa aba nova (nunca
-// carregados pela própria página, nunca usados em fetch/XHR) — o marcador
-// ALLOW-REDE-LINK-CITACAO avisa o `sem-rede.yml`/`testes/rodar.sh` para não
-// barrar exatamente estas duas linhas. Não copie esse marcador para nenhuma
-// outra linha sem entender por quê ele existe.
+// Estas linhas guardam links de citação: endereços estáticos que o usuário clica para abrir
+// numa aba nova. Nada é carregado pela página nem usado em fetch/XHR. O marcador
+// ALLOW-REDE-LINK-CITACAO avisa o guarda de rede (.github/scripts/verificar-sem-rede.py,
+// usado pelo sem-rede.yml e pelo testes/rodar.sh) para não barrar exatamente estas linhas.
+// Não copie esse marcador para nenhuma outra linha sem entender por quê ele existe.
+// (A Política de Inovação é diferente: é uma âncora direta no index.html, que o guarda aceita
+// por ter rel="noopener noreferrer".)
 var LINK_TABELA_CAMPO_APLICACAO = "https://www.gov.br/inpi/pt-br/servicos/programas-de-computador/arquivos/manual/campo_de_aplicacao.pdf"; // ALLOW-REDE-LINK-CITACAO
 var LINK_TABELA_TIPO_PROGRAMA = "https://www.gov.br/inpi/pt-br/assuntos/programas-de-computador/tipos_de_programa.pdf"; // ALLOW-REDE-LINK-CITACAO
 
@@ -78,7 +79,6 @@ var LINK_CIE_PROGRAMA_COMPUTADOR = "https://www.cie.cefetmg.br/programa-de-compu
 
 // Política de Inovação do CEFET-MG — Resolução CD-018/22 (consolidada; alterada
 // pela CD-035/25), regras de titularidade da propriedade intelectual.
-var LINK_POLITICA_INOVACAO = "https://www2.conselhodiretor.cefetmg.br/conselho-diretor/resolucoes-anos-2020/2022-2/cd-res-2022-018/"; // ALLOW-REDE-LINK-CITACAO
 
 // Fonte: Portal de Classificação do INPI (hominpi.serpro.gov.br), tabela vigente em 05/06/2006.
 // [codigo, rotulo_curto, descricao_de_apoio_a_busca]
