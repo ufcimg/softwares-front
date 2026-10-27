@@ -13,7 +13,7 @@
       instituicao_tipo: "", instituicao_parceira_idx: "",
       campus: "", tipo_vinculo: "", endereco_independente: "",
       telefone: "", email: "", email_alternativo: "",
-      qualificacao_profissional: "", percentual_contribuicao: ""
+      qualificacao_profissional: ""
     };
   }
 
@@ -411,6 +411,9 @@
     card.querySelector(".bloco-cefetmg").hidden = autor.instituicao_tipo !== "cefetmg";
     card.querySelector(".bloco-parceira").hidden = autor.instituicao_tipo !== "parceira";
     card.querySelector(".bloco-independente").hidden = autor.instituicao_tipo !== "independente";
+    // Telefone: só quem é do CEFET-MG pode deixá-lo em branco.
+    card.querySelector(".telefone-req").textContent =
+      (autor.instituicao_tipo === "parceira" || autor.instituicao_tipo === "independente") ? "*" : "";
     card.querySelector(".email-alt-req").textContent =
       (autor.instituicao_tipo === "cefetmg" && autor.tipo_vinculo === "temporario") ? "obrigatório" : "";
     card.querySelector(".email-dominio-hint").hidden =
@@ -426,7 +429,8 @@
     card.querySelector(".autor-titulo").textContent = index === 0 ? "Autor correspondente" : ("Autor " + (index + 1));
 
     var removerBtn = card.querySelector('[data-action="remover"]');
-    if(state.autores.length <= 1){
+    // O primeiro autor é o autor correspondente e não pode ser removido; os demais podem.
+    if(index === 0){
       removerBtn.hidden = true;
     } else {
       removerBtn.addEventListener("click", function(){
@@ -780,7 +784,6 @@
     if(payload.autores.length < 1){
       out.push({ step: "autores", el: null, message: "Adicione ao menos um autor" });
     }
-    var soma = 0, temPercentual = false;
     var haServidor = state.autores.some(function(r){ return r.instituicao_tipo === "cefetmg" && r.tipo_vinculo === "servidor"; });
     payload.autores.forEach(function(a, i){
       var raw = state.autores[i];
@@ -823,16 +826,11 @@
       if(!a.email) out.push({ step: "autores", el: campo("email"), message: rotulo + ": e-mail obrigatório" });
       if(!a.qualificacao_profissional) out.push({ step: "autores", el: campo("qualificacao_profissional"), message: rotulo + ": informe a qualificação profissional" });
 
-      if(a.percentual_contribuicao === "" || isNaN(a.percentual_contribuicao)){
-        out.push({ step: "autores", el: campo("percentual_contribuicao"), message: rotulo + ": informe o percentual de contribuição" });
-      } else {
-        temPercentual = true;
-        soma += a.percentual_contribuicao;
+      // Quem não é do CEFET-MG precisa de um telefone para a CIE conseguir o contato.
+      if(raw.instituicao_tipo && raw.instituicao_tipo !== "cefetmg" && (a.telefone || "").replace(/\D/g, "").length < 8){
+        out.push({ step: "autores", el: campo("telefone"), message: rotulo + ": telefone de contato obrigatório para quem não é do CEFET-MG (com DDD)" });
       }
     });
-    if(temPercentual && Math.abs(soma - 100) > 0.5){
-      out.push({ step: "autores", el: null, message: "A soma dos percentuais de contribuição dos autores precisa ser 100 (está em " + soma + ")" });
-    }
     return out;
   }
 
@@ -938,8 +936,7 @@
         email: (a.email || "").trim(),
         email_alternativo: (a.email_alternativo || "").trim(),
         qualificacao_profissional: (a.qualificacao_profissional || "").trim(),
-        inventor_externo: !!a.instituicao_tipo && a.instituicao_tipo !== "cefetmg",
-        percentual_contribuicao: a.percentual_contribuicao === "" ? "" : parseFloat(a.percentual_contribuicao)
+        inventor_externo: !!a.instituicao_tipo && a.instituicao_tipo !== "cefetmg"
       };
     });
 
@@ -1466,7 +1463,6 @@
           linhaCampo("Telefone", autor.telefone, { indent: 10 });
           linhaCampo("Qualificação profissional", autor.qualificacao_profissional, { indent: 10 });
           linhaCampo("Inventor externo?", autor.inventor_externo ? "Sim" : "Não", { indent: 10 });
-          linhaCampo("% de contribuição", (autor.percentual_contribuicao === "" ? "—" : autor.percentual_contribuicao + "%"), { indent: 10 });
           fluxo.y -= 6;
         });
 
@@ -1595,7 +1591,6 @@
           completo.email = a.email || "";
           completo.email_alternativo = a.email_alternativo || "";
           completo.qualificacao_profissional = a.qualificacao_profissional || "";
-          completo.percentual_contribuicao = a.percentual_contribuicao != null ? String(a.percentual_contribuicao) : "";
           if(a.instituicao_tipo === "parceira" && a.instituicao_nome){
             var idx = state.instituicoes_parceiras.findIndex(function(inst){ return inst.razao_social === a.instituicao_nome; });
             completo.instituicao_parceira_idx = idx !== -1 ? String(idx) : "";

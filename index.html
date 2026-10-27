@@ -632,8 +632,9 @@
 
     <div class="row2">
       <div class="field">
-        <label>Telefone de contato</label>
-        <input type="text" data-campo="telefone" autocomplete="off">
+        <label>Telefone de contato <span class="req telefone-req"></span></label>
+        <input type="text" data-campo="telefone" autocomplete="off" placeholder="(00) 00000-0000">
+        <p class="field-hint">Obrigatório para quem não é do CEFET-MG. Inclua o DDD.</p>
         <p class="field-error" hidden></p>
       </div>
       <div class="field">
@@ -651,18 +652,11 @@
       <p class="field-error" hidden></p>
     </div>
 
-    <div class="row2">
-      <div class="field combo-box">
-        <label>Qualificação profissional <span class="req">*</span></label>
-        <input type="text" data-campo="qualificacao_profissional" autocomplete="off" placeholder="Digite para buscar…">
-        <div class="combo-listbox qualificacao-listbox" hidden></div>
-        <p class="field-error" hidden></p>
-      </div>
-      <div class="field">
-        <label>% de contribuição <span class="req">*</span></label>
-        <input type="number" data-campo="percentual_contribuicao" min="0" max="100" step="1" autocomplete="off">
-        <p class="field-error" hidden></p>
-      </div>
+    <div class="field combo-box">
+      <label>Qualificação profissional <span class="req">*</span></label>
+      <input type="text" data-campo="qualificacao_profissional" autocomplete="off" placeholder="Digite para buscar…">
+      <div class="combo-listbox qualificacao-listbox" hidden></div>
+      <p class="field-error" hidden></p>
     </div>
   </div>
 </template>
