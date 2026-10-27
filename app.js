@@ -33,7 +33,7 @@
 
   var STEPS = [
     { id: "identificacao", titulo: "Identificação" },
-    { id: "maturidade", titulo: "Maturidade (TRL)", visibleIf: function(){ return trlExigeMaturidade(); } },
+    { id: "maturidade", titulo: "Maturidade e interesse", visibleIf: function(){ return trlExigeMaturidade() || temEmpresaInteressada(); } },
     { id: "instituicoes", titulo: "Instituições" },
     { id: "autores", titulo: "Autores" },
     { id: "classificacao", titulo: "Classificação" },
@@ -46,6 +46,21 @@
   function trlExigeMaturidade(){
     var v = parseInt($("trl").value, 10);
     return !isNaN(v) && v >= TRL_MINIMO_MATURIDADE;
+  }
+
+  // Pode haver empresa interessada em qualquer nível de TRL: a pergunta é da
+  // Identificação e independe do TRL. A etapa Maturidade mostra a justificativa
+  // só com TRL alto e os dados da empresa só com a resposta "Sim".
+  function temEmpresaInteressada(){
+    var marcado = document.querySelector('input[name="empresa_interessada"]:checked');
+    return !!marcado && marcado.value === "sim";
+  }
+
+  function atualizarBlocosMaturidade(){
+    var blocoTrl = $("maturidade-bloco-trl");
+    var blocoEmpresa = $("maturidade-bloco-empresa");
+    if(blocoTrl) blocoTrl.hidden = !trlExigeMaturidade();
+    if(blocoEmpresa) blocoEmpresa.hidden = !temEmpresaInteressada();
   }
 
   // ================= helpers dom =================
@@ -680,17 +695,19 @@
     var out = [];
     var m = payload.maturidade;
     if(!m) return out;
-    if(m.justificativa.length < MIN_CARACTERES_PARAGRAFO){
+    if(trlExigeMaturidade() && m.justificativa.length < MIN_CARACTERES_PARAGRAFO){
       out.push({ step: "maturidade", el: $("trl_justificativa"), message: "Justificativa do TRL precisa de pelo menos " + MIN_CARACTERES_PARAGRAFO + " caracteres" });
     }
-    if(!m.empresa_interessada.razao_social){
-      out.push({ step: "maturidade", el: $("interessada_razao_social"), message: "Informe a razão social da empresa ou instituição interessada" });
-    }
-    if(!cnpjValido(m.empresa_interessada.cnpj)){
-      out.push({ step: "maturidade", el: $("interessada_cnpj"), message: "CNPJ da empresa ou instituição interessada ausente ou inválido" });
-    }
-    if(!m.carta_interesse_sera_anexada){
-      out.push({ step: "maturidade", el: $("decl_carta_interesse"), message: "Confirme que a carta de manifestação de interesse será anexada ao processo" });
+    if(m.empresa_interessada){
+      if(!m.empresa_interessada.razao_social){
+        out.push({ step: "maturidade", el: $("interessada_razao_social"), message: "Informe a razão social da empresa ou instituição interessada" });
+      }
+      if(!cnpjValido(m.empresa_interessada.cnpj)){
+        out.push({ step: "maturidade", el: $("interessada_cnpj"), message: "CNPJ da empresa ou instituição interessada ausente ou inválido" });
+      }
+      if(!m.carta_interesse_sera_anexada){
+        out.push({ step: "maturidade", el: $("decl_carta_interesse"), message: "Confirme que a carta de manifestação de interesse será anexada ao processo" });
+      }
     }
     return out;
   }
@@ -915,7 +932,8 @@
         data_criacao: $("data_criacao").value,
         data_publicacao: $("data_publicacao").value,
         informe_projeto: $("informe_projeto").value.trim(),
-        possui_colaborador_externo: possuiColaboradorExterno
+        possui_colaborador_externo: possuiColaboradorExterno,
+        possui_empresa_interessada: temEmpresaInteressada()
       },
       instituicoes_parceiras: instituicoesValidas,
       autores: autoresValidos,
@@ -965,14 +983,14 @@
       payload.parceria = { cotitularidade: cotitularidade };
     }
 
-    if(trlExigeMaturidade()){
+    if(trlExigeMaturidade() || temEmpresaInteressada()){
       payload.maturidade = {
-        justificativa: $("trl_justificativa").value.trim(),
-        empresa_interessada: {
+        justificativa: trlExigeMaturidade() ? $("trl_justificativa").value.trim() : "",
+        empresa_interessada: temEmpresaInteressada() ? {
           razao_social: $("interessada_razao_social").value.trim(),
           cnpj: $("interessada_cnpj").value.trim()
-        },
-        carta_interesse_sera_anexada: $("decl_carta_interesse").checked
+        } : null,
+        carta_interesse_sera_anexada: temEmpresaInteressada() ? $("decl_carta_interesse").checked : false
       };
     }
 
@@ -1080,6 +1098,7 @@
   }
 
   function renderTudo(){
+    atualizarBlocosMaturidade();
     var payload = buildPayload();
     var pending = validateAll(payload);
     ultimoPending = pending;
@@ -1329,11 +1348,15 @@
         linhaCampo("Data de criação", payload.software.data_criacao);
         linhaCampo("Data de publicação", payload.software.data_publicacao);
         paragrafoBloco("Descrição do software:", payload.software.descricao_curta);
-        if(payload.maturidade){
+        if(payload.maturidade && payload.maturidade.justificativa){
           paragrafoBloco("Justificativa do TRL " + payload.software.trl + " (comprovantes anexados ao processo no SIPAC):", payload.maturidade.justificativa);
+        }
+        if(payload.maturidade && payload.maturidade.empresa_interessada){
           linhaCampo("Empresa/instituição interessada", payload.maturidade.empresa_interessada.razao_social);
           linhaCampo("CNPJ", payload.maturidade.empresa_interessada.cnpj);
           linhaCheckbox("Declaro que a carta de manifestação de interesse será anexada ao processo no SIPAC.", payload.maturidade.carta_interesse_sera_anexada);
+        } else {
+          linhaCampo("Empresa/instituição interessada", "Não informada");
         }
         if(payload.software.informe_projeto){
           paragrafoBloco("Projeto de pesquisa, extensão ou outros:", payload.software.informe_projeto);
@@ -1563,11 +1586,18 @@
     $("release-repo-sufixo").value = repo.indexOf(prefixo) === 0 ? repo.slice(prefixo.length) : repo;
 
     var mat = payload.maturidade || {};
-    var emp = mat.empresa_interessada || {};
+    var emp = mat.empresa_interessada || null;
+    var interessada = !!emp;
+    document.querySelectorAll('input[name="empresa_interessada"]').forEach(function(r){
+      r.checked = interessada ? r.value === "sim" : r.value === "nao";
+    });
+    document.querySelectorAll(".radio-pill").forEach(function(pill){
+      pill.classList.toggle("selected", pill.querySelector("input").checked);
+    });
     $("trl_justificativa").value = mat.justificativa || "";
     $("trl_justificativa").dispatchEvent(new Event("input"));
-    $("interessada_razao_social").value = emp.razao_social || "";
-    $("interessada_cnpj").value = emp.cnpj || "";
+    $("interessada_razao_social").value = emp ? (emp.razao_social || "") : "";
+    $("interessada_cnpj").value = emp ? (emp.cnpj || "") : "";
     $("decl_carta_interesse").checked = !!mat.carta_interesse_sera_anexada;
     $("decl_carta_interesse").dispatchEvent(new Event("change"));
 
@@ -1655,6 +1685,14 @@
     r.addEventListener("change", function(){
       var marcado = document.querySelector('input[name="derivacao_autorizada"]:checked');
       $("derivacao-detalhes-wrap").hidden = !(marcado && marcado.value === "sim");
+      document.querySelectorAll(".radio-pill").forEach(function(pill){
+        pill.classList.toggle("selected", pill.querySelector("input").checked);
+      });
+    });
+  });
+
+  document.querySelectorAll('input[name="empresa_interessada"]').forEach(function(r){
+    r.addEventListener("change", function(){
       document.querySelectorAll(".radio-pill").forEach(function(pill){
         pill.classList.toggle("selected", pill.querySelector("input").checked);
       });

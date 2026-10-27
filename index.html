@@ -89,6 +89,15 @@
         </div>
 
         <div class="field">
+          <label>Há empresa ou instituição interessada neste software?</label>
+          <p class="field-hint">Pode haver interesse em qualquer nível de maturidade (TRL). Se houver, a etapa seguinte pede os dados dela e traz um modelo de carta de manifestação de interesse.</p>
+          <div class="radio-row">
+            <label class="radio-pill selected"><input type="radio" name="empresa_interessada" id="interessada-nao" value="nao" checked> Não</label>
+            <label class="radio-pill"><input type="radio" name="empresa_interessada" id="interessada-sim" value="sim"> Sim</label>
+          </div>
+        </div>
+
+        <div class="field">
           <label for="informe_projeto">Informe sobre projeto de Pesquisa, Extensão ou Outros <span class="opt-note">(detalhe a origem acima, se aplicável)</span></label>
           <p class="field-hint">Se este programa surgiu de um plano de trabalho (Pesquisa, Extensão, Edital, P&amp;D...), detalhe aqui — inclua no processo do SIPAC, quando for o caso, o documento que autoriza o projeto e as aprovações prévias dos setores do CEFET-MG.</p>
           <textarea id="informe_projeto"></textarea>
@@ -114,49 +123,61 @@
 
     <section class="wizard-step" data-step="maturidade">
       <fieldset>
-        <legend>Maturidade (TRL)</legend>
-        
-        <div class="info-box">
-          <span class="info-box-icon" aria-hidden="true">!</span>
-          <div class="info-box-body">
-            <strong class="info-box-title">TRL 6 ou superior exige justificativa fundamentada e empresa interessada.</strong>
-            Softwares neste nível já foram demonstrados em ambiente relevante ou operacional. Por isso o registro
-            exige a justificativa do nível, com comprovantes, e a manifestação de interesse de uma empresa ou
-            instituição que dê continuidade ao projeto e/ou mantenha parceria em andamento.
-          </div>
-        </div>
+        <legend>Maturidade e interesse</legend>
 
-        <div class="field">
-          <label for="trl_justificativa">Justificativa do nível de TRL <span class="req">*</span></label>
-          <p class="field-hint">Explique por que o software está no nível escolhido, apontando os comprovantes que sustentam a afirmação: relatórios de testes ou validação, demonstrações em ambiente real, pilotos, usuários ou clientes atendidos, publicações. Anexe esses comprovantes ao processo no SIPAC.</p>
-          <textarea id="trl_justificativa" class="textarea-longa" minlength="120"></textarea>
-          <p class="char-count" id="trl-justificativa-count">0 caracteres (mínimo 120)</p>
-          <p class="field-error" hidden></p>
-        </div>
-
-        <div class="field">
-          <label>Empresa ou instituição interessada <span class="req">*</span></label>
-          <p class="field-hint">Quem manifestou interesse em dar continuidade ao projeto e/ou mantém parceria em andamento. Sem essa manifestação o INPI não aceita o registro.</p>
-          <div class="row2">
-            <div class="field">
-              <label for="interessada_razao_social">Razão social <span class="req">*</span></label>
-              <input type="text" id="interessada_razao_social" autocomplete="off">
-              <p class="field-error" hidden></p>
-            </div>
-            <div class="field">
-              <label for="interessada_cnpj">CNPJ <span class="req">*</span></label>
-              <input type="text" id="interessada_cnpj" inputmode="numeric" placeholder="00.000.000/0000-00" autocomplete="off">
-              <p class="field-error" hidden></p>
+        <div id="maturidade-bloco-trl" hidden>
+          <div class="info-box">
+            <span class="info-box-icon" aria-hidden="true">i</span>
+            <div class="info-box-body">
+              <strong class="info-box-title">TRL 6 ou superior pede a justificativa do nível.</strong>
+              Software neste nível já foi demonstrado em ambiente relevante ou operacional. Explique por que ele
+              está no nível escolhido, apontando os comprovantes que serão anexados ao processo no SIPAC.
             </div>
           </div>
-        </div>
 
-        <div class="decl-card" data-decl-card>
-          <input type="checkbox" id="decl_carta_interesse" class="decl-native">
-          <span class="decl-check" aria-hidden="true">✓</span>
-          <div class="decl-body">
-            <label for="decl_carta_interesse">Declaro que a carta de manifestação de interesse da empresa ou instituição acima será anexada ao processo no SIPAC.</label>
+          <div class="field">
+            <label for="trl_justificativa">Justificativa do nível de TRL <span class="req">*</span></label>
+            <p class="field-hint">Explique por que o software está no nível escolhido, apontando os comprovantes que sustentam a afirmação: relatórios de testes ou validação, demonstrações em ambiente real, pilotos, usuários ou clientes atendidos, publicações. Anexe esses comprovantes ao processo no SIPAC.</p>
+            <textarea id="trl_justificativa" class="textarea-longa" minlength="120"></textarea>
+            <p class="char-count" id="trl-justificativa-count">0 caracteres (mínimo 120)</p>
             <p class="field-error" hidden></p>
+          </div>
+        </div>
+
+        <div id="maturidade-bloco-empresa" hidden>
+          <div class="field">
+            <label>Empresa ou instituição interessada <span class="req">*</span></label>
+            <p class="field-hint">Quem manifestou interesse em utilizar o software, dar continuidade ao seu desenvolvimento ou manter parceria em andamento.</p>
+            <div class="row2">
+              <div class="field">
+                <label for="interessada_razao_social">Razão social <span class="req">*</span></label>
+                <input type="text" id="interessada_razao_social" autocomplete="off">
+                <p class="field-error" hidden></p>
+              </div>
+              <div class="field">
+                <label for="interessada_cnpj">CNPJ <span class="req">*</span></label>
+                <input type="text" id="interessada_cnpj" inputmode="numeric" placeholder="00.000.000/0000-00" autocomplete="off">
+                <p class="field-error" hidden></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-box">
+            <span class="info-box-icon" aria-hidden="true">i</span>
+            <div class="info-box-body">
+              <strong class="info-box-title">Carta de manifestação de interesse</strong>
+              A carta, assinada por um representante da empresa ou instituição, é anexada ao processo no SIPAC.
+              <a href="modelos/carta-manifestacao-interesse.docx" id="link-modelo-carta" class="source-citation-link" download>Baixar o modelo da carta (.docx)</a>
+            </div>
+          </div>
+
+          <div class="decl-card" data-decl-card>
+            <input type="checkbox" id="decl_carta_interesse" class="decl-native">
+            <span class="decl-check" aria-hidden="true">✓</span>
+            <div class="decl-body">
+              <label for="decl_carta_interesse">Declaro que a carta de manifestação de interesse da empresa ou instituição acima será anexada ao processo no SIPAC.</label>
+              <p class="field-error" hidden></p>
+            </div>
           </div>
         </div>
       </fieldset>
