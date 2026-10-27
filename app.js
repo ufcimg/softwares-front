@@ -88,6 +88,8 @@
   function atualizarBlocosMaturidade(){
     var blocoTrl = $("maturidade-bloco-trl");
     var blocoEmpresa = $("maturidade-bloco-empresa");
+    // O passo de anexar os comprovantes do TRL, nas instruções finais, só existe com TRL alto.
+    if($("passo-anexos-trl")) $("passo-anexos-trl").hidden = !trlExigeMaturidade();
     if(blocoTrl) blocoTrl.hidden = !trlExigeMaturidade();
     if(blocoEmpresa) blocoEmpresa.hidden = !temEmpresaInteressada();
     var tipos = tiposDeInteresse();
