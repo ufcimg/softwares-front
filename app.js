@@ -1204,7 +1204,49 @@
     el.className = "draft-feedback " + tipo;
   }
 
+  // ---- texto que a fonte do PDF não consegue imprimir ----
+  //
+  // As fontes padrão do PDF (Helvetica, Courier) só aceitam o conjunto WinAnsi
+  // (o Latin-1 do Windows). Um caractere fora dele, como "ṕ" de uma tecla morta
+  // mal usada, "ś"/"ł" de um nome estrangeiro, "→" ou um emoji, fazia o pdf-lib
+  // lançar "WinAnsi cannot encode" e a geração inteira falhava. O texto IMPRESSO
+  // é simplificado (letra-base, espaço ou "?") e a pessoa é avisada; os dados de
+  // verdade (anexo e bloco de texto) seguem intactos, com escapes \uXXXX.
+  var substituicoesPdf = [];
+
+  function anotarSubstituicao(original, trocado){
+    var par = original + " → " + trocado;
+    if(substituicoesPdf.indexOf(par) === -1) substituicoesPdf.push(par);
+  }
+
+  function simplificarParaPdf(texto, suportados){
+    var saida = "";
+    Array.from(String(texto)).forEach(function(c){
+      if(suportados.has(c.codePointAt(0))){ saida += c; return; }
+      var base = c.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      if(base !== c && base.length && Array.from(base).every(function(b){ return suportados.has(b.codePointAt(0)); })){
+        anotarSubstituicao(c, base);
+        saida += base;
+        return;
+      }
+      if(c.codePointAt(0) < 0x20 || c.codePointAt(0) === 0x7f || /\s/.test(c)){ saida += " "; return; }
+      anotarSubstituicao(c, "?");
+      saida += "?";
+    });
+    return saida;
+  }
+
+  function protegerFonte(fonte){
+    var suportados = new Set(fonte.getCharacterSet());
+    var codificar = fonte.encodeText.bind(fonte);
+    var medir = fonte.widthOfTextAtSize.bind(fonte);
+    fonte.encodeText = function(texto){ return codificar(simplificarParaPdf(texto, suportados)); };
+    fonte.widthOfTextAtSize = function(texto, tamanho){ return medir(simplificarParaPdf(texto, suportados), tamanho); };
+    return fonte;
+  }
+
   function gerarPdf(payload){
+    substituicoesPdf = [];
     var PDFLib = window.PDFLib;
     var LARGURA = 595.28, ALTURA = 841.89, MARGEM = 50;
     var LARGURA_UTIL = LARGURA - 2 * MARGEM;
@@ -1224,7 +1266,7 @@
         pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold),
         pdfDoc.embedFont(PDFLib.StandardFonts.Courier)
       ]).then(function(fontes){
-        var fonte = fontes[0], fonteNegrito = fontes[1], fonteMono = fontes[2];
+        var fonte = protegerFonte(fontes[0]), fonteNegrito = protegerFonte(fontes[1]), fonteMono = protegerFonte(fontes[2]);
 
         pdfDoc.setTitle("Submissão de software — " + (payload.software.titulo || "sem título"));
         pdfDoc.setAuthor("NIT/CEFET-MG");
@@ -1504,7 +1546,12 @@
         linhaCampo("CPF do declarante", declarante.cpf);
         linhaCampo("Data da declaração", payload.gerado_em);
 
-        var jsonTexto = JSON.stringify(payload);
+        // Só ASCII: todo caractere acima de 0x7e vira \uXXXX. É o mesmo JSON (o parser devolve
+        // exatamente os mesmos textos), mas o bloco impresso nunca tem caractere que a fonte
+        // não imprime, e o sha256= é do texto que está de fato no PDF.
+        var jsonTexto = JSON.stringify(payload).replace(/[\u007f-\uffff]/g, function(c){
+          return "\\u" + ("0000" + c.charCodeAt(0).toString(16)).slice(-4);
+        });
 
         return sha256Hex(jsonTexto).then(function(shaTexto){
           novaPagina();
@@ -1849,7 +1896,12 @@
     gerarPdf(payload).then(function(bytes){
       baixarArquivo(bytes, nomeArquivoPdf(payload), "application/pdf");
       formularioSujo = false;
-      mostrarStatusPdf("PDF gerado. Anexe ao processo no SIPAC e apague o arquivo do seu computador depois.", "ok");
+      var aviso = substituicoesPdf.length
+        ? " Atenção: o PDF não imprime alguns caracteres, que foram simplificados no texto impresso (" +
+          substituicoesPdf.slice(0, 8).join(", ") + (substituicoesPdf.length > 8 ? ", …" : "") +
+          "). Os dados originais seguem intactos no anexo do PDF; se quiser o texto impresso certo, troque esses caracteres no formulário."
+        : "";
+      mostrarStatusPdf("PDF gerado. Anexe ao processo no SIPAC e apague o arquivo do seu computador depois." + aviso, substituicoesPdf.length ? "info" : "ok");
     }).catch(function(erro){
       mostrarStatusPdf("Erro ao gerar o PDF: " + erro.message, "error");
     });
