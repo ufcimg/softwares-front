@@ -90,6 +90,8 @@
     var blocoEmpresa = $("maturidade-bloco-empresa");
     // O passo de anexar os comprovantes do TRL, nas instruções finais, só existe com TRL alto.
     if($("passo-anexos-trl")) $("passo-anexos-trl").hidden = !trlExigeMaturidade();
+    // E o da carta de manifestação de interesse, só com empresa interessada (em qualquer TRL).
+    if($("passo-anexo-carta")) $("passo-anexo-carta").hidden = !temEmpresaInteressada();
     if(blocoTrl) blocoTrl.hidden = !trlExigeMaturidade();
     if(blocoEmpresa) blocoEmpresa.hidden = !temEmpresaInteressada();
     var tipos = tiposDeInteresse();
