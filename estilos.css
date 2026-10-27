@@ -305,7 +305,7 @@ input:focus, select:focus, textarea:focus{
   user-select: none;
   transition: background 0.15s, border-color 0.15s;
 }
-.chip input{ margin: 0; accent-color: var(--accent); }
+.chip input{ margin: 0 6px 0 0; accent-color: var(--accent); }
 .chip.checked{
   background: var(--accent-soft);
   border-color: var(--accent);

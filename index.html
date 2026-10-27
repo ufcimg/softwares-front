@@ -97,7 +97,7 @@
 
         <div class="field">
           <label>Há empresa ou instituição interessada neste software?</label>
-          <p class="field-hint">Pode haver interesse em qualquer nível de maturidade (TRL). Se houver, a etapa seguinte pede os dados dela e traz um modelo de carta de manifestação de interesse.</p>
+          <p class="field-hint">O interesse é importante para demonstrar a maturidade do software e é umdos dos critérios para submissão ao INPI.</p>
           <div class="radio-row">
             <label class="radio-pill selected"><input type="radio" name="empresa_interessada" id="interessada-nao" value="nao" checked> Não</label>
             <label class="radio-pill"><input type="radio" name="empresa_interessada" id="interessada-sim" value="sim"> Sim</label>
@@ -138,7 +138,9 @@
             <div class="info-box-body">
               <strong class="info-box-title">TRL 6 ou superior pede a justificativa do nível.</strong>
               Software neste nível já foi demonstrado em ambiente relevante ou operacional. Explique por que ele
-              está no nível escolhido, apontando os comprovantes que serão anexados ao processo no SIPAC.
+              está no nível escolhido, apontando os comprovantes. <strong>Salve os documentos que comprovam o nível
+              na pasta <code>comprovante_trl/</code> do repositório</strong> (o checklist do README cobra isso) e anexe-os
+              também ao processo no SIPAC.
             </div>
           </div>
 
@@ -167,6 +169,25 @@
                 <p class="field-error" hidden></p>
               </div>
             </div>
+          </div>
+
+          <div class="field">
+            <label>Tipo de interesse <span class="req">*</span></label>
+            <p class="field-hint">Marque o que se aplica; pode ser mais de um.</p>
+            <div class="chip-picker" id="interesse-tipos"></div>
+            <p class="field-error" hidden></p>
+          </div>
+
+          <div class="field" id="interesse-parceria-wrap" hidden>
+            <label for="interesse_parceria_projeto">Projeto, convênio ou edital da parceria em andamento <span class="req">*</span></label>
+            <input type="text" id="interesse_parceria_projeto" autocomplete="off">
+            <p class="field-error" hidden></p>
+          </div>
+
+          <div class="field" id="interesse-outro-wrap" hidden>
+            <label for="interesse_outro_descricao">Descreva o outro interesse <span class="req">*</span></label>
+            <input type="text" id="interesse_outro_descricao" autocomplete="off">
+            <p class="field-error" hidden></p>
           </div>
 
           <div class="info-box">

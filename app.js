@@ -56,11 +56,43 @@
     return !!marcado && marcado.value === "sim";
   }
 
+  // Tipos de interesse marcados (valores de INTERESSE_TIPOS), na ordem da lista.
+  function tiposDeInteresse(){
+    var marcados = {};
+    document.querySelectorAll("#interesse-tipos input[type=checkbox]").forEach(function(c){
+      if(c.checked) marcados[c.value] = true;
+    });
+    return INTERESSE_TIPOS.map(function(t){ return t.valor; }).filter(function(v){ return marcados[v]; });
+  }
+
+  function rotuloDoInteresse(valor){
+    var t = INTERESSE_TIPOS.filter(function(x){ return x.valor === valor; })[0];
+    return t ? t.rotulo : valor;
+  }
+
+  function construirTiposDeInteresse(){
+    var container = $("interesse-tipos");
+    INTERESSE_TIPOS.forEach(function(tipo){
+      var label = document.createElement("label");
+      label.className = "chip";
+      var input = document.createElement("input");
+      input.type = "checkbox";
+      input.value = tipo.valor;
+      input.addEventListener("change", function(){ label.classList.toggle("checked", input.checked); });
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(tipo.rotulo));
+      container.appendChild(label);
+    });
+  }
+
   function atualizarBlocosMaturidade(){
     var blocoTrl = $("maturidade-bloco-trl");
     var blocoEmpresa = $("maturidade-bloco-empresa");
     if(blocoTrl) blocoTrl.hidden = !trlExigeMaturidade();
     if(blocoEmpresa) blocoEmpresa.hidden = !temEmpresaInteressada();
+    var tipos = tiposDeInteresse();
+    if($("interesse-parceria-wrap")) $("interesse-parceria-wrap").hidden = tipos.indexOf("parceria_em_andamento") === -1;
+    if($("interesse-outro-wrap")) $("interesse-outro-wrap").hidden = tipos.indexOf("outro") === -1;
   }
 
   // ================= helpers dom =================
@@ -699,6 +731,16 @@
       out.push({ step: "maturidade", el: $("trl_justificativa"), message: "Justificativa do TRL precisa de pelo menos " + MIN_CARACTERES_PARAGRAFO + " caracteres" });
     }
     if(m.empresa_interessada){
+      var tipos = m.empresa_interessada.tipos_de_interesse;
+      if(tipos.length === 0){
+        out.push({ step: "maturidade", el: document.querySelector("#interesse-tipos input"), message: "Marque ao menos um tipo de interesse da empresa ou instituição" });
+      }
+      if(tipos.indexOf("parceria_em_andamento") !== -1 && !m.empresa_interessada.projeto_parceria){
+        out.push({ step: "maturidade", el: $("interesse_parceria_projeto"), message: "Informe o projeto, convênio ou edital da parceria em andamento" });
+      }
+      if(tipos.indexOf("outro") !== -1 && !m.empresa_interessada.outro_descricao){
+        out.push({ step: "maturidade", el: $("interesse_outro_descricao"), message: "Descreva o outro tipo de interesse" });
+      }
       if(!m.empresa_interessada.razao_social){
         out.push({ step: "maturidade", el: $("interessada_razao_social"), message: "Informe a razão social da empresa ou instituição interessada" });
       }
@@ -988,7 +1030,12 @@
         justificativa: trlExigeMaturidade() ? $("trl_justificativa").value.trim() : "",
         empresa_interessada: temEmpresaInteressada() ? {
           razao_social: $("interessada_razao_social").value.trim(),
-          cnpj: $("interessada_cnpj").value.trim()
+          cnpj: $("interessada_cnpj").value.trim(),
+          // Valores de INTERESSE_TIPOS. A extensão do NIT os leva ao Notion como
+          // seleção múltipla; os dois textos só valem quando a opção está marcada.
+          tipos_de_interesse: tiposDeInteresse(),
+          projeto_parceria: tiposDeInteresse().indexOf("parceria_em_andamento") !== -1 ? $("interesse_parceria_projeto").value.trim() : "",
+          outro_descricao: tiposDeInteresse().indexOf("outro") !== -1 ? $("interesse_outro_descricao").value.trim() : ""
         } : null,
         carta_interesse_sera_anexada: temEmpresaInteressada() ? $("decl_carta_interesse").checked : false
       };
@@ -1354,6 +1401,13 @@
         if(payload.maturidade && payload.maturidade.empresa_interessada){
           linhaCampo("Empresa/instituição interessada", payload.maturidade.empresa_interessada.razao_social);
           linhaCampo("CNPJ", payload.maturidade.empresa_interessada.cnpj);
+          linhaCampo("Tipo de interesse", payload.maturidade.empresa_interessada.tipos_de_interesse.map(rotuloDoInteresse).join("; "));
+          if(payload.maturidade.empresa_interessada.projeto_parceria){
+            linhaCampo("Parceria em andamento (projeto, convênio ou edital)", payload.maturidade.empresa_interessada.projeto_parceria);
+          }
+          if(payload.maturidade.empresa_interessada.outro_descricao){
+            linhaCampo("Outro interesse", payload.maturidade.empresa_interessada.outro_descricao);
+          }
           linhaCheckbox("Declaro que a carta de manifestação de interesse será anexada ao processo no SIPAC.", payload.maturidade.carta_interesse_sera_anexada);
         } else {
           linhaCampo("Empresa/instituição interessada", "Não informada");
@@ -1598,6 +1652,13 @@
     $("trl_justificativa").dispatchEvent(new Event("input"));
     $("interessada_razao_social").value = emp ? (emp.razao_social || "") : "";
     $("interessada_cnpj").value = emp ? (emp.cnpj || "") : "";
+    var tiposSalvos = emp && Array.isArray(emp.tipos_de_interesse) ? emp.tipos_de_interesse : [];
+    document.querySelectorAll("#interesse-tipos input[type=checkbox]").forEach(function(c){
+      c.checked = tiposSalvos.indexOf(c.value) !== -1;
+      c.closest(".chip").classList.toggle("checked", c.checked);
+    });
+    $("interesse_parceria_projeto").value = emp ? (emp.projeto_parceria || "") : "";
+    $("interesse_outro_descricao").value = emp ? (emp.outro_descricao || "") : "";
     $("decl_carta_interesse").checked = !!mat.carta_interesse_sera_anexada;
     $("decl_carta_interesse").dispatchEvent(new Event("change"));
 
@@ -1633,6 +1694,7 @@
   $("link-politica-inovacao").href = LINK_POLITICA_INOVACAO;
 
   renderTrlPicker();
+  construirTiposDeInteresse();
 
   buildChipPicker("linguagens-chips", LINGUAGENS_COMUNS, "linguagens");
 

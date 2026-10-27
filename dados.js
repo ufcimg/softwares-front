@@ -16,6 +16,17 @@ var TRL_MINIMO_MATURIDADE = 6;
 // contribuição de cada instituição parceira).
 var MIN_CARACTERES_PARAGRAFO = 250;
 
+// Tipos de interesse de uma empresa ou instituição no software (marcação múltipla).
+// `valor` é o que vai no JSON do PDF e, pela extensão do NIT, para a propriedade de
+// seleção múltipla do Notion; `rotulo` é o que o docente vê e sai no PDF. Mantenha as
+// mesmas opções do modelo de carta (modelos/carta-manifestacao-interesse.docx).
+var INTERESSE_TIPOS = [
+  { valor: "avaliar_uso", rotulo: "Conhecer e avaliar o software para uso na organização" },
+  { valor: "continuidade_desenvolvimento", rotulo: "Dar continuidade ao desenvolvimento do software, em parceria com a instituição" },
+  { valor: "parceria_em_andamento", rotulo: "Manter parceria já em andamento (projeto, convênio ou edital)" },
+  { valor: "outro", rotulo: "Outro" }
+];
+
 // Quantidade de palavras-chave aceitas na etapa Classificação.
 var MIN_PALAVRAS_CHAVE = 2;
 var MAX_PALAVRAS_CHAVE = 5;
