@@ -793,3 +793,12 @@ button{
   justify-content: center;
 }
 .file-label input[type="file"]{ display: none; }
+
+/* Campos preenchidos pelo fragmento (#...) do link do repositório. */
+.aviso-link{ max-width: 920px; margin: 0 auto 16px; }
+/* .info-box define display:flex, que vence o atributo hidden: sem esta linha o aviso apareceria sempre. */
+.aviso-link[hidden]{ display: none; }
+.preenchido-pelo-link{
+  background: var(--accent-soft) !important;
+  border-color: var(--accent) !important;
+}

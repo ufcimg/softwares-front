@@ -1821,6 +1821,60 @@
     e.target.value = "";
   });
 
+  // ================= preenchimento pelo link do repositório =================
+  //
+  // O README do repositório de submissão traz um link para este formulário com
+  // título, TRL, origem, repositório, release e SHA-512 no FRAGMENTO (#...), não
+  // na query string: o fragmento nunca sai do navegador (não vai ao servidor nem
+  // a log nenhum), o que mantém a regra de que nada daqui é enviado a lugar
+  // nenhum. Os valores entram só como TEXTO (.value), nunca como HTML, e cada
+  // um é validado; qualquer valor fora do formato é ignorado. Dado pessoal
+  // nunca viaja por aqui. Qualquer pessoa pode montar um link, por isso o aviso
+  // pede que o docente confira.
+
+  var LIMITE_TITULO = 250;
+
+  function lerFragmento(){
+    var bruto = (window.location.hash || "").replace(/^#/, "");
+    try { return new URLSearchParams(bruto); } catch(e) { return new URLSearchParams(""); }
+  }
+
+  function marcarPreenchido(el){
+    if(el) el.classList.add("preenchido-pelo-link");
+  }
+
+  function aplicarFragmento(){
+    var q = lerFragmento();
+    var aplicados = 0;
+
+    var titulo = (q.get("titulo") || "").trim().slice(0, LIMITE_TITULO);
+    if(titulo.length >= 3){ $("titulo").value = titulo; marcarPreenchido($("titulo")); aplicados++; }
+
+    var trl = parseInt(q.get("trl"), 10);
+    if(trl >= 1 && trl <= 9){
+      $("trl").value = String(trl);
+      renderTrlPicker();
+      marcarPreenchido($("trl-picker"));
+      aplicados++;
+    }
+
+    var origem = q.get("origem") || "";
+    var opcaoOrigem = Array.prototype.some.call($("origem_tipo").options, function(o){ return o.value === origem && origem !== ""; });
+    if(opcaoOrigem){ $("origem_tipo").value = origem; marcarPreenchido($("origem_tipo")); aplicados++; }
+
+    var repositorio = q.get("repositorio") || "";
+    if(/^[A-Za-z0-9._-]{1,100}$/.test(repositorio)){ $("release-repo-sufixo").value = repositorio; marcarPreenchido($("release-repo-sufixo")); aplicados++; }
+
+    var release = q.get("release") || "";
+    if(/^[^\s<>"'`]{1,100}$/.test(release)){ $("release-tag").value = release; marcarPreenchido($("release-tag")); aplicados++; }
+
+    var sha = (q.get("sha512") || "").trim();
+    if(/^[0-9a-fA-F]{128}$/.test(sha)){ $("release-sha512").value = sha.toLowerCase(); marcarPreenchido($("release-sha512")); aplicados++; }
+
+    if($("aviso-link")) $("aviso-link").hidden = aplicados === 0;
+  }
+
+  aplicarFragmento();
   goToStep("identificacao");
   renderTudo();
 })();
