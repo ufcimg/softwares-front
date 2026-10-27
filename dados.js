@@ -38,7 +38,7 @@ var LINGUAGENS_COMUNS = ["Python","JavaScript","TypeScript",
                       "Java","C","C++","C#","PHP","Go","R",
                       "SQL","HTML/CSS","Shell/Bash","Kotlin"];
 
-// Campi do CEFET-MG usados no seletor de Campus (autor com Instituição = CEFET-MG).
+// Campi da UFCIMG usados no seletor de Campus (autor com Instituição = UFCIMG).
 var CAMPUS_CEFETMG = [
   "BH/Nova Suíça", "BH/Nova Gameleira", "BH/Gameleira",
   "Araxá", "Contagem", "Curvelo", "Divinópolis",
@@ -76,9 +76,6 @@ var LINK_TABELA_TIPO_PROGRAMA = "https://www.gov.br/inpi/pt-br/assuntos/programa
 // computador (substitui o cadastro no Integra, que não é mais o pré-requisito
 // — confirmado 2026-09-21; a página é atualizada por eles, não por nós).
 var LINK_CIE_PROGRAMA_COMPUTADOR = "https://www.cie.cefetmg.br/programa-de-computador/"; // ALLOW-REDE-LINK-CITACAO
-
-// Política de Inovação do CEFET-MG — Resolução CD-018/22 (consolidada; alterada
-// pela CD-035/25), regras de titularidade da propriedade intelectual.
 
 // Fonte: Portal de Classificação do INPI (hominpi.serpro.gov.br), tabela vigente em 05/06/2006.
 // [codigo, rotulo_curto, descricao_de_apoio_a_busca]

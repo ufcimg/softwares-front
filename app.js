@@ -404,9 +404,9 @@
 
   function atualizarVisibilidadeAutor(card, autor){
     // Vínculo é único por autor: para instituição parceira é sempre "parceiro"
-    // (não é uma escolha — é decorrência de a instituição não ser o CEFET-MG/UFCI),
+    // (não é uma escolha — é decorrência de a instituição não ser a UFCIMG),
     // e para inventor independente não existe vínculo institucional. Só quando a
-    // instituição é o CEFET-MG/UFCI o vínculo é uma escolha real, feita no combo.
+    // instituição é a UFCIMG o vínculo é uma escolha real, feita no combo.
     if(autor.instituicao_tipo === "parceira"){
       autor.tipo_vinculo = "parceiro";
     } else if(autor.instituicao_tipo === "independente"){
@@ -415,7 +415,7 @@
     card.querySelector(".bloco-cefetmg").hidden = autor.instituicao_tipo !== "cefetmg";
     card.querySelector(".bloco-parceira").hidden = autor.instituicao_tipo !== "parceira";
     card.querySelector(".bloco-independente").hidden = autor.instituicao_tipo !== "independente";
-    // Telefone: só quem é do CEFET-MG pode deixá-lo em branco.
+    // Telefone: só quem é da UFCIMG pode deixá-lo em branco.
     card.querySelector(".telefone-req").textContent =
       (autor.instituicao_tipo === "parceira" || autor.instituicao_tipo === "independente") ? "*" : "";
     card.querySelector(".email-alt-req").textContent =
@@ -821,7 +821,7 @@
 
       if(i === 0 && raw.instituicao_tipo){
         if(raw.instituicao_tipo !== "cefetmg"){
-          out.push({ step: "autores", el: campo("instituicao_tipo"), message: "O autor correspondente precisa ter vínculo com o CEFET-MG" });
+          out.push({ step: "autores", el: campo("instituicao_tipo"), message: "O autor correspondente precisa ter vínculo com a UFCIMG" });
         } else if(haServidor && raw.tipo_vinculo && raw.tipo_vinculo !== "servidor"){
           out.push({ step: "autores", el: campo("tipo_vinculo"), message: "Há servidor entre os autores — o autor correspondente precisa ser o servidor" });
         }
@@ -830,9 +830,9 @@
       if(!a.email) out.push({ step: "autores", el: campo("email"), message: rotulo + ": e-mail obrigatório" });
       if(!a.qualificacao_profissional) out.push({ step: "autores", el: campo("qualificacao_profissional"), message: rotulo + ": informe a qualificação profissional" });
 
-      // Quem não é do CEFET-MG precisa de um telefone para a CIE conseguir o contato.
+      // Quem não é da UFCIMG precisa de um telefone para a CIE conseguir o contato.
       if(raw.instituicao_tipo && raw.instituicao_tipo !== "cefetmg" && (a.telefone || "").replace(/\D/g, "").length < 8){
-        out.push({ step: "autores", el: campo("telefone"), message: rotulo + ": telefone de contato obrigatório para quem não é do CEFET-MG (com DDD)" });
+        out.push({ step: "autores", el: campo("telefone"), message: rotulo + ": telefone de contato obrigatório para quem não é da UFCIMG (com DDD)" });
       }
     });
     return out;
@@ -863,7 +863,7 @@
     var cot = payload.parceria.cotitularidade;
     var incompleto = cot.some(function(c){ return c.percentual === "" || isNaN(c.percentual); });
     if(incompleto){
-      out.push({ step: "parceria", el: $("cotitularidade-cefetmg"), message: "Preencha o percentual de cotitularidade de todas as instituições (inclusive CEFET-MG)" });
+      out.push({ step: "parceria", el: $("cotitularidade-cefetmg"), message: "Preencha o percentual de cotitularidade de todas as instituições (inclusive UFCIMG)" });
     } else {
       var soma = cot.reduce(function(acc, c){ return acc + c.percentual; }, 0);
       if(Math.abs(soma - 100) > 0.5){
@@ -915,7 +915,7 @@
 
   function buildPayload(){
     var autoresValidos = state.autores.map(function(a){
-      var instNome = "CEFET-MG";
+      var instNome = "UFCIMG";
       var endereco = "";
       if(a.instituicao_tipo === "parceira"){
         var inst = state.instituicoes_parceiras[a.instituicao_parceira_idx];
@@ -1010,7 +1010,7 @@
     if(instituicoesValidas.length > 0){
       var cefetInput = $("cotitularidade-cefetmg");
       var cotitularidade = [{
-        instituicao: "CEFET-MG",
+        instituicao: "UFCIMG",
         percentual: cefetInput.value === "" ? "" : parseFloat(cefetInput.value)
       }];
       document.querySelectorAll("#cotitularidade-parceiras-list [data-idx]").forEach(function(inp){
@@ -1273,17 +1273,17 @@
         var fonte = protegerFonte(fontes[0]), fonteNegrito = protegerFonte(fontes[1]), fonteMono = protegerFonte(fontes[2]);
 
         pdfDoc.setTitle("Submissão de software — " + (payload.software.titulo || "sem título"));
-        pdfDoc.setAuthor("NIT/CEFET-MG");
+        pdfDoc.setAuthor("NIT/UFCIMG");
         pdfDoc.setSubject("Dados para instrução do processo no SIPAC");
-        pdfDoc.setKeywords(["NIT", "CEFET-MG", "SIPAC", "software"].concat(payload.software.palavras_chave || []));
-        pdfDoc.setProducer("Gerador de PDF do SIPAC — NIT/CEFET-MG");
+        pdfDoc.setKeywords(["NIT", "UFCIMG", "SIPAC", "software"].concat(payload.software.palavras_chave || []));
+        pdfDoc.setProducer("Gerador de PDF do SIPAC — NIT/UFCIMG");
         pdfDoc.setCreationDate(new Date());
 
         var fluxo = { pagina: null, y: 0, primeiraPagina: true };
 
         function desenharCabecalho(){
           fluxo.pagina.drawRectangle({ x: 0, y: ALTURA - 6, width: LARGURA, height: 6, color: COR_ACCENT });
-          fluxo.pagina.drawText("Submissão de software ao NIT/CEFET-MG", {
+          fluxo.pagina.drawText("Submissão de software ao NIT/UFCIMG", {
             x: MARGEM, y: fluxo.y, size: 17, font: fonteNegrito, color: COR_TINTA
           });
           fluxo.y -= 20;
@@ -1424,7 +1424,7 @@
           var paginas = pdfDoc.getPages();
           paginas.forEach(function(pagina, i){
             pagina.drawLine({ start: { x: MARGEM, y: 34 }, end: { x: LARGURA - MARGEM, y: 34 }, thickness: 0.5, color: COR_LINHA });
-            var texto = "NIT/CEFET-MG — página " + (i + 1) + " de " + paginas.length;
+            var texto = "NIT/UFCIMG — página " + (i + 1) + " de " + paginas.length;
             pagina.drawText(texto, { x: MARGEM, y: 22, size: 7.5, font: fonteMono, color: COR_TINTA_FRACA });
           });
         }
@@ -1482,7 +1482,7 @@
         paragrafoSimples(
           "Indicar um autor correspondente não isenta os demais autores da responsabilidade de acompanhar o " +
           "processo até a homologação da proteção, publicada na RPI. A titularidade patrimonial do software segue " +
-          "a Política de Inovação do CEFET-MG; o direito moral de autoria permanece sempre com cada autor listado, " +
+          "a Política de Inovação da UFCIMG; o direito moral de autoria permanece sempre com cada autor listado, " +
           "independentemente de quem detenha os direitos patrimoniais. Cada autor deve manter a guarda de uma " +
           "cópia do software desenvolvido.",
           8.5

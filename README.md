@@ -1,7 +1,7 @@
 # nit-ferramentas
 
 Repositório **público**, sem credenciais — hospeda o gerador do PDF do SIPAC
-usado no processo de submissão de software do NIT/CEFET-MG, publicado via
+usado no processo de submissão de software do NIT/UFCIMG, publicado via
 GitHub Pages.
 
 ## O que tem aqui
@@ -91,7 +91,7 @@ submissão ficou propositalmente mínimo e **não** espelha este formulário; os
 dois respondem perguntas diferentes.
 
 Dados constantes e de autocomplete (tabelas de Área de Aplicação/Tipo de
-Programa do INPI, qualificações profissionais, campi do CEFET-MG, o prefixo
+Programa do INPI, qualificações profissionais, campi da UFCIMG, o prefixo
 `GITHUB_ORG`) ficam isolados em `docs/dados.js` — é o único arquivo a mexer
 para atualizar essas listas. A lógica do wizard (etapas, validação por campo,
 geração do PDF) fica em `docs/app.js`.
