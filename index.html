@@ -10,10 +10,10 @@
 <body>
 
 <header class="top">
-  <span class="eyebrow">Universidade Federal de Ciência e Inovação de Minas Gerais (UFCIMG)</span>
+  <span class="eyebrow" data-instituicao="nome-e-sigla"></span>
   <span class="eyebrow">Coordenação de Inovação e Empreendedorismo</span>
   <h1>Comunicado de Invenção - Programa de Computador</h1>
-  <p>Preencha este formulário em etapas para gerar o PDF anexado ao processo do SIPAC — título, classificação, dados completos dos autores e o programa a proteger.</p>
+  <p>Preencha este formulário em etapas para gerar o PDF anexado ao processo do SIPAC.</p>
 </header>
 
 <div class="draft-toolbar">
@@ -99,7 +99,7 @@
 
         <div class="field">
           <label>Há empresa ou instituição interessada neste software?</label>
-          <p class="field-hint">O interesse é importante para demonstrar a maturidade do software e é umdos dos critérios para submissão ao INPI.</p>
+          <p class="field-hint">O interesse é importante para demonstrar a maturidade do software.</p>
           <div class="radio-row">
             <label class="radio-pill selected"><input type="radio" name="empresa_interessada" id="interessada-nao" value="nao" checked> Não</label>
             <label class="radio-pill"><input type="radio" name="empresa_interessada" id="interessada-sim" value="sim"> Sim</label>
@@ -108,7 +108,7 @@
 
         <div class="field">
           <label for="informe_projeto">Informe sobre projeto de Pesquisa, Extensão ou Outros <span class="opt-note">(detalhe a origem acima, se aplicável)</span></label>
-          <p class="field-hint">Se este programa surgiu de um plano de trabalho (Pesquisa, Extensão, Edital, P&amp;D...), detalhe aqui — inclua no processo do SIPAC, quando for o caso, o documento que autoriza o projeto e as aprovações prévias dos setores da UFCIMG.</p>
+          <p class="field-hint">Se este programa surgiu de um algum projeto (Pesquisa, Extensão, Edital, P&amp;D...), detalhe aqui — inclua no processo do SIPAC, quando for o caso, o documento que autoriza o projeto e as aprovações prévias dos setores da <span data-instituicao="sigla"></span>.</p>
           <textarea id="informe_projeto"></textarea>
           <p class="field-error" hidden></p>
         </div>
@@ -233,7 +233,7 @@
         <div class="info-box">
           <span class="info-box-icon" aria-hidden="true">!</span>
           <div class="info-box-body">
-            <strong class="info-box-title">O autor correspondente (o primeiro da lista) precisa ter vínculo com a UFCIMG.</strong>
+            <strong class="info-box-title">O autor correspondente (o primeiro da lista) precisa ter vínculo com a <span data-instituicao="sigla"></span>.</strong>
           </div>
         </div>
 
@@ -243,7 +243,7 @@
             <strong class="info-box-title">Todos os autores continuam responsáveis, não só o correspondente.</strong>
             Indicar um correspondente não isenta os demais da responsabilidade de acompanhar o processo até a
             homologação da proteção (quando houver). A titularidade patrimonial do software segue a
-            <a href="https://www2.conselhodiretor.cefetmg.br/conselho-diretor/resolucoes-anos-2020/2022-2/cd-res-2022-018/" id="link-politica-inovacao" class="source-citation-link" target="_blank" rel="noopener noreferrer">Política de Inovação da UFCIMG</a>. Cada autor também
+            <a href="https://www2.conselhodiretor.cefetmg.br/conselho-diretor/resolucoes-anos-2020/2022-2/cd-res-2022-018/" id="link-politica-inovacao" class="source-citation-link" target="_blank" rel="noopener noreferrer">Política de Inovação da <span data-instituicao="sigla"></span></a>. Cada autor também
             deve manter a guarda de uma cópia do software desenvolvido, para eventual necessidade de comprovação ou
             modificação futura.
           </div>
@@ -313,12 +313,12 @@
         <div class="field">
           <label>Percentuais de cotitularidade <span class="req">*</span></label>
           <p class="field-error" id="cotitularidade-erro" hidden></p>
-          <p class="field-hint">A soma dos percentuais (UFCIMG + instituições parceiras) precisa totalizar 100%.</p>
+          <p class="field-hint">A soma dos percentuais (<span data-instituicao="sigla"></span> + instituições parceiras) precisa totalizar 100%.</p>
           <div class="cotitularidade-row">
-            <div class="field"><label>UFCIMG</label></div>
+            <div class="field"><label data-instituicao="sigla"></label></div>
             <div class="field">
-              <label for="cotitularidade-cefetmg">%</label>
-              <input type="number" id="cotitularidade-cefetmg" min="0" max="100" step="1">
+              <label for="cotitularidade-propria">%</label>
+              <input type="number" id="cotitularidade-propria" min="0" max="100" step="1">
             </div>
           </div>
           <div id="cotitularidade-parceiras-list"></div>
@@ -423,8 +423,9 @@
           <input type="checkbox" id="comercializacao_compromisso" class="decl-native">
           <span class="decl-check" aria-hidden="true">✓</span>
           <div class="decl-body">
-            <label for="comercializacao_compromisso">Comercialização da Tecnologia — comprometo-me a informar a CIE e os demais autores</label>
+            <label for="comercializacao_compromisso">Comercialização da Tecnologia — comprometo-me a informar a CIE e os demais autores <span class="req">*</span></label>
             <p class="field-hint">Sobre a existência de negociação que poderá resultar no licenciamento da TECNOLOGIA, quando será necessário firmar um instrumento jurídico com as condições dessa comercialização. É liberado o uso não comercial e interno pelos autores, para fins meramente didáticos e de pesquisa, sem remuneração.</p>
+            <p class="field-error" hidden></p>
           </div>
         </div>
 
@@ -578,7 +579,7 @@
         <label>Instituição <span class="req">*</span></label>
         <select data-campo="instituicao_tipo">
           <option value="">Selecione</option>
-          <option value="cefetmg">UFCIMG</option>
+          <option value="propria" data-instituicao="sigla"></option>
           <option value="parceira">Instituição parceira</option>
           <option value="independente">Inventor independente</option>
         </select>
@@ -586,7 +587,7 @@
       </div>
     </div>
 
-    <div class="bloco-cefetmg" hidden>
+    <div class="bloco-propria" hidden>
       <div class="row2">
         <div class="field">
           <label>Campus <span class="req">*</span></label>
@@ -629,7 +630,7 @@
       <div class="field">
         <label>Telefone de contato <span class="req telefone-req"></span></label>
         <input type="text" data-campo="telefone" autocomplete="off" placeholder="(00) 00000-0000">
-        <p class="field-hint">Obrigatório para quem não é da UFCIMG. Inclua o DDD.</p>
+        <p class="field-hint">Obrigatório para quem não é da <span data-instituicao="sigla"></span>. Inclua o DDD.</p>
         <p class="field-error" hidden></p>
       </div>
       <div class="field">

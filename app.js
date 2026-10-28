@@ -103,6 +103,8 @@
 
   function $(id){ return document.getElementById(id); }
 
+  function nomeESiglaInstituicao(){ return INSTITUICAO.nome + " (" + INSTITUICAO.sigla + ")"; }
+
   function normalize(s){
     return (s || "").toString().toLowerCase()
       .normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -146,6 +148,28 @@
 
   function rotuloVinculo(v){
     return { servidor: "Servidor", estudante: "Estudante", temporario: "Vínculo temporário", terceirizado: "Terceirizado", parceiro: "Parceiro" }[v] || "—";
+  }
+
+  // Rótulos e formatos só do texto impresso no PDF; o JSON continua com os valores crus.
+  function rotuloOrigem(v){
+    return { pesquisa: "Pesquisa", ensino: "Ensino", extensao: "Extensão", projeto_fomento: "Projeto com fomento", outro: "Outro" }[v] || v || "—";
+  }
+
+  function rotuloTrl(n){
+    var t = TRL_NIVEIS.filter(function(x){ return x.nivel === Number(n); })[0];
+    return t ? "TRL " + t.nivel + " — " + t.titulo : String(n || "—");
+  }
+
+  // "2026-10-13" -> "13/10/2026"; qualquer outra coisa passa como veio.
+  function dataBr(iso){
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
+    return m ? m[3] + "/" + m[2] + "/" + m[1] : iso;
+  }
+
+  // 11 dígitos -> 000.000.000-00; qualquer outra coisa passa como veio.
+  function cpfBr(cpf){
+    var d = String(cpf || "").replace(/\D/g, "");
+    return d.length === 11 ? d.slice(0, 3) + "." + d.slice(3, 6) + "." + d.slice(6, 9) + "-" + d.slice(9) : cpf;
   }
 
   // ================= tags genéricas =================
@@ -373,7 +397,7 @@
 
   function popularSelectCampus(selectEl, autor){
     selectEl.innerHTML = '<option value="">Selecione</option>';
-    CAMPUS_CEFETMG.forEach(function(campus){
+    CAMPI_INSTITUICAO.forEach(function(campus){
       var opt = document.createElement("option");
       opt.value = campus;
       opt.textContent = campus;
@@ -404,24 +428,24 @@
 
   function atualizarVisibilidadeAutor(card, autor){
     // Vínculo é único por autor: para instituição parceira é sempre "parceiro"
-    // (não é uma escolha — é decorrência de a instituição não ser a UFCIMG),
+    // (não é uma escolha — é decorrência de a instituição não ser a própria),
     // e para inventor independente não existe vínculo institucional. Só quando a
-    // instituição é a UFCIMG o vínculo é uma escolha real, feita no combo.
+    // instituição é a própria o vínculo é uma escolha real, feita no combo.
     if(autor.instituicao_tipo === "parceira"){
       autor.tipo_vinculo = "parceiro";
     } else if(autor.instituicao_tipo === "independente"){
       autor.tipo_vinculo = "";
     }
-    card.querySelector(".bloco-cefetmg").hidden = autor.instituicao_tipo !== "cefetmg";
+    card.querySelector(".bloco-propria").hidden = autor.instituicao_tipo !== "propria";
     card.querySelector(".bloco-parceira").hidden = autor.instituicao_tipo !== "parceira";
     card.querySelector(".bloco-independente").hidden = autor.instituicao_tipo !== "independente";
-    // Telefone: só quem é da UFCIMG pode deixá-lo em branco.
+    // Telefone: só quem é da instituição própria pode deixá-lo em branco.
     card.querySelector(".telefone-req").textContent =
       (autor.instituicao_tipo === "parceira" || autor.instituicao_tipo === "independente") ? "*" : "";
     card.querySelector(".email-alt-req").textContent =
-      (autor.instituicao_tipo === "cefetmg" && autor.tipo_vinculo === "temporario") ? "obrigatório" : "";
+      (autor.instituicao_tipo === "propria" && autor.tipo_vinculo === "temporario") ? "obrigatório" : "";
     card.querySelector(".email-dominio-hint").hidden =
-      !(autor.instituicao_tipo === "cefetmg" && (autor.tipo_vinculo === "servidor" || autor.tipo_vinculo === "temporario"));
+      !(autor.instituicao_tipo === "propria" && (autor.tipo_vinculo === "servidor" || autor.tipo_vinculo === "temporario"));
     if(autor.instituicao_tipo === "parceira"){
       atualizarPreviewEnderecoParceira(card, autor);
     }
@@ -492,6 +516,12 @@
   }
 
   // ================= cotitularidade (etapa Parceria) =================
+
+  // As parceiras, na ordem das linhas da etapa (data-idx). Identifica cada
+  // item pelo instituicao_tipo, nunca pela posição nem pelo nome.
+  function cotitularesParceiras(cotitularidade){
+    return cotitularidade.filter(function(c){ return c.instituicao_tipo !== "propria"; });
+  }
 
   function renderCotitularidade(){
     var container = $("cotitularidade-parceiras-list");
@@ -788,7 +818,7 @@
     if(payload.autores.length < 1){
       out.push({ step: "autores", el: null, message: "Adicione ao menos um autor" });
     }
-    var haServidor = state.autores.some(function(r){ return r.instituicao_tipo === "cefetmg" && r.tipo_vinculo === "servidor"; });
+    var haServidor = state.autores.some(function(r){ return r.instituicao_tipo === "propria" && r.tipo_vinculo === "servidor"; });
     payload.autores.forEach(function(a, i){
       var raw = state.autores[i];
       var card = container.children[i];
@@ -801,15 +831,15 @@
 
       if(!raw.instituicao_tipo){
         out.push({ step: "autores", el: campo("instituicao_tipo"), message: rotulo + ": selecione a instituição" });
-      } else if(raw.instituicao_tipo === "cefetmg"){
+      } else if(raw.instituicao_tipo === "propria"){
         if(!raw.campus) out.push({ step: "autores", el: campo("campus"), message: rotulo + ": selecione o campus" });
         if(!raw.tipo_vinculo) out.push({ step: "autores", el: campo("tipo_vinculo"), message: rotulo + ": selecione o tipo de vínculo" });
         if(raw.tipo_vinculo === "temporario" && !raw.email_alternativo){
           out.push({ step: "autores", el: campo("email_alternativo"), message: rotulo + ": e-mail alternativo obrigatório para vínculo temporário" });
         }
         if((raw.tipo_vinculo === "servidor" || raw.tipo_vinculo === "temporario") && a.email &&
-           a.email.toLowerCase().split("@")[1] !== EMAIL_DOMINIO_CEFETMG){
-          out.push({ step: "autores", el: campo("email"), message: rotulo + ": e-mail principal precisa ser institucional (@" + EMAIL_DOMINIO_CEFETMG + ") para vínculo servidor ou temporário" });
+           a.email.toLowerCase().split("@")[1] !== EMAIL_DOMINIO_INSTITUCIONAL){
+          out.push({ step: "autores", el: campo("email"), message: rotulo + ": e-mail principal precisa ser institucional (@" + EMAIL_DOMINIO_INSTITUCIONAL + ") para vínculo servidor ou temporário" });
         }
       } else if(raw.instituicao_tipo === "parceira"){
         if(raw.instituicao_parceira_idx === "" || raw.instituicao_parceira_idx == null){
@@ -820,8 +850,8 @@
       }
 
       if(i === 0 && raw.instituicao_tipo){
-        if(raw.instituicao_tipo !== "cefetmg"){
-          out.push({ step: "autores", el: campo("instituicao_tipo"), message: "O autor correspondente precisa ter vínculo com a UFCIMG" });
+        if(raw.instituicao_tipo !== "propria"){
+          out.push({ step: "autores", el: campo("instituicao_tipo"), message: "O autor correspondente precisa ter vínculo com a " + INSTITUICAO.sigla });
         } else if(haServidor && raw.tipo_vinculo && raw.tipo_vinculo !== "servidor"){
           out.push({ step: "autores", el: campo("tipo_vinculo"), message: "Há servidor entre os autores — o autor correspondente precisa ser o servidor" });
         }
@@ -830,9 +860,9 @@
       if(!a.email) out.push({ step: "autores", el: campo("email"), message: rotulo + ": e-mail obrigatório" });
       if(!a.qualificacao_profissional) out.push({ step: "autores", el: campo("qualificacao_profissional"), message: rotulo + ": informe a qualificação profissional" });
 
-      // Quem não é da UFCIMG precisa de um telefone para a CIE conseguir o contato.
-      if(raw.instituicao_tipo && raw.instituicao_tipo !== "cefetmg" && (a.telefone || "").replace(/\D/g, "").length < 8){
-        out.push({ step: "autores", el: campo("telefone"), message: rotulo + ": telefone de contato obrigatório para quem não é da UFCIMG (com DDD)" });
+      // Quem não é da instituição própria precisa de um telefone para a CIE conseguir o contato.
+      if(raw.instituicao_tipo && raw.instituicao_tipo !== "propria" && (a.telefone || "").replace(/\D/g, "").length < 8){
+        out.push({ step: "autores", el: campo("telefone"), message: rotulo + ": telefone de contato obrigatório para quem não é da " + INSTITUICAO.sigla + " (com DDD)" });
       }
     });
     return out;
@@ -854,7 +884,7 @@
   function validateParceria(payload){
     var out = [];
     if(!payload.parceria) return out;
-    payload.parceria.cotitularidade.slice(1).forEach(function(c, i){
+    cotitularesParceiras(payload.parceria.cotitularidade).forEach(function(c, i){
       if(c.justificativa.length < MIN_CARACTERES_PARAGRAFO){
         out.push({ step: "parceria", el: document.querySelector('[data-just-idx="' + i + '"]'),
           message: (c.instituicao || "Instituição parceira " + (i + 1)) + ": descreva a contribuição em pelo menos " + MIN_CARACTERES_PARAGRAFO + " caracteres" });
@@ -863,11 +893,11 @@
     var cot = payload.parceria.cotitularidade;
     var incompleto = cot.some(function(c){ return c.percentual === "" || isNaN(c.percentual); });
     if(incompleto){
-      out.push({ step: "parceria", el: $("cotitularidade-cefetmg"), message: "Preencha o percentual de cotitularidade de todas as instituições (inclusive UFCIMG)" });
+      out.push({ step: "parceria", el: $("cotitularidade-propria"), message: "Preencha o percentual de cotitularidade de todas as instituições (inclusive " + INSTITUICAO.sigla + ")" });
     } else {
       var soma = cot.reduce(function(acc, c){ return acc + c.percentual; }, 0);
       if(Math.abs(soma - 100) > 0.5){
-        out.push({ step: "parceria", el: $("cotitularidade-cefetmg"), message: "A soma dos percentuais de cotitularidade precisa ser 100 (está em " + soma + ")" });
+        out.push({ step: "parceria", el: $("cotitularidade-propria"), message: "A soma dos percentuais de cotitularidade precisa ser 100 (está em " + soma + ")" });
       }
     }
     return out;
@@ -888,6 +918,7 @@
     if(!d.responsabilidade_busca_anterioridade) out.push({ step: "declaracoes", el: $("decl_busca_anterioridade"), message: "Confirme a declaração sobre a Busca de Anterioridade" });
     if(!d.ciencia_custos_inpi) out.push({ step: "declaracoes", el: $("decl_custos_inpi"), message: "Confirme a ciência dos custos do INPI" });
     if(!d.guarda_hash_50_anos) out.push({ step: "declaracoes", el: $("decl_guarda_hash"), message: "Confirme a declaração de guarda do arquivo pelo prazo de 50 anos" });
+    if(!payload.comercializacao.compromisso_informar_cie) out.push({ step: "declaracoes", el: $("comercializacao_compromisso"), message: "Confirme o compromisso de informar a CIE e os demais autores sobre negociação de licenciamento" });
     if(!d.guarda_copia_autores) out.push({ step: "declaracoes", el: $("decl_guarda_copia"), message: "Confirme a declaração de guarda de cópia do software pelos autores" });
     if(payload.derivacao.autorizada && !d.guarda_autorizacao_derivacao){
       out.push({ step: "declaracoes", el: $("decl_guarda_derivacao"), message: "Confirme a declaração de guarda da autorização de derivação" });
@@ -915,7 +946,7 @@
 
   function buildPayload(){
     var autoresValidos = state.autores.map(function(a){
-      var instNome = "UFCIMG";
+      var instNome = INSTITUICAO.sigla;
       var endereco = "";
       if(a.instituicao_tipo === "parceira"){
         var inst = state.instituicoes_parceiras[a.instituicao_parceira_idx];
@@ -931,16 +962,16 @@
         cpf: (a.cpf || "").trim(),
         instituicao_tipo: a.instituicao_tipo || "",
         instituicao_nome: instNome,
-        campus: a.instituicao_tipo === "cefetmg" ? (a.campus || "") : "",
+        campus: a.instituicao_tipo === "propria" ? (a.campus || "") : "",
         // "parceiro" já vem forçado em state por atualizarVisibilidadeAutor
         // quando instituicao_tipo é "parceira" — não é uma escolha do docente.
-        tipo_vinculo: (a.instituicao_tipo === "cefetmg" || a.instituicao_tipo === "parceira") ? (a.tipo_vinculo || "") : "",
+        tipo_vinculo: (a.instituicao_tipo === "propria" || a.instituicao_tipo === "parceira") ? (a.tipo_vinculo || "") : "",
         endereco: endereco,
         telefone: (a.telefone || "").trim(),
         email: (a.email || "").trim(),
         email_alternativo: (a.email_alternativo || "").trim(),
         qualificacao_profissional: (a.qualificacao_profissional || "").trim(),
-        inventor_externo: !!a.instituicao_tipo && a.instituicao_tipo !== "cefetmg"
+        inventor_externo: !!a.instituicao_tipo && a.instituicao_tipo !== "propria"
       };
     });
 
@@ -953,7 +984,7 @@
     });
 
     var possuiColaboradorExterno = state.autores.some(function(a){
-      return !!a.instituicao_tipo && a.instituicao_tipo !== "cefetmg";
+      return !!a.instituicao_tipo && a.instituicao_tipo !== "propria";
     });
 
     var trlValue = $("trl").value;
@@ -1008,16 +1039,18 @@
     };
 
     if(instituicoesValidas.length > 0){
-      var cefetInput = $("cotitularidade-cefetmg");
+      var propriaInput = $("cotitularidade-propria");
       var cotitularidade = [{
-        instituicao: "UFCIMG",
-        percentual: cefetInput.value === "" ? "" : parseFloat(cefetInput.value)
+        instituicao_tipo: "propria",
+        instituicao: INSTITUICAO.sigla,
+        percentual: propriaInput.value === "" ? "" : parseFloat(propriaInput.value)
       }];
       document.querySelectorAll("#cotitularidade-parceiras-list [data-idx]").forEach(function(inp){
         var idx = parseInt(inp.getAttribute("data-idx"), 10);
         var inst = instituicoesValidas[idx];
         var just = document.querySelector('[data-just-idx="' + idx + '"]');
         cotitularidade.push({
+          instituicao_tipo: "parceira",
           instituicao: inst ? inst.razao_social : "",
           percentual: inp.value === "" ? "" : parseFloat(inp.value),
           justificativa: just ? just.value.trim() : ""
@@ -1056,7 +1089,7 @@
   }
 
   function ehCampoDeCotitularidade(el){
-    return !!el && (el.id === "cotitularidade-cefetmg" || el.hasAttribute("data-idx"));
+    return !!el && (el.id === "cotitularidade-propria" || el.hasAttribute("data-idx"));
   }
 
   function renderInlineErrors(pending){
@@ -1087,23 +1120,23 @@
   function renderErroCotitularidade(pendParceria){
     var erroEl = $("cotitularidade-erro");
     if(!erroEl) return;
-    var cefetInput = $("cotitularidade-cefetmg");
+    var propriaInput = $("cotitularidade-propria");
     var parceirasInputs = document.querySelectorAll("#cotitularidade-parceiras-list [data-idx]");
-    cefetInput.classList.remove("invalid");
+    propriaInput.classList.remove("invalid");
     parceirasInputs.forEach(function(inp){ inp.classList.remove("invalid"); });
     if(pendParceria.length === 0){
       erroEl.hidden = true;
       erroEl.textContent = "";
       return;
     }
-    var tocado = touchedEls.has(cefetInput) || stepsTouched.parceria;
+    var tocado = touchedEls.has(propriaInput) || stepsTouched.parceria;
     if(!tocado){
       parceirasInputs.forEach(function(inp){ if(touchedEls.has(inp)) tocado = true; });
     }
     if(!tocado) return;
     erroEl.hidden = false;
     erroEl.textContent = pendParceria[0].message;
-    if(cefetInput.value === "") cefetInput.classList.add("invalid");
+    if(propriaInput.value === "") propriaInput.classList.add("invalid");
     parceirasInputs.forEach(function(inp){ if(inp.value === "") inp.classList.add("invalid"); });
   }
 
@@ -1260,8 +1293,8 @@
     var COR_TINTA_SUAVE = PDFLib.rgb(0.337, 0.353, 0.306);
     var COR_TINTA_FRACA = PDFLib.rgb(0.541, 0.553, 0.502);
     var COR_LINHA = PDFLib.rgb(0.847, 0.839, 0.784);
-    var COR_ACCENT = PDFLib.rgb(0.184, 0.365, 0.314);
-    var COR_ACCENT_SUAVE = PDFLib.rgb(0.890, 0.925, 0.906);
+    var COR_ACCENT = PDFLib.rgb(0, 0.2196, 0.4118); // #003869
+    var COR_ACCENT_SUAVE = PDFLib.rgb(0.890, 0.925, 0.961); // azul bem claro, para os cartões
     var COR_BRANCO = PDFLib.rgb(1, 1, 1);
 
     return PDFLib.PDFDocument.create().then(function(pdfDoc){
@@ -1272,32 +1305,38 @@
       ]).then(function(fontes){
         var fonte = protegerFonte(fontes[0]), fonteNegrito = protegerFonte(fontes[1]), fonteMono = protegerFonte(fontes[2]);
 
-        pdfDoc.setTitle("Submissão de software — " + (payload.software.titulo || "sem título"));
-        pdfDoc.setAuthor("NIT/UFCIMG");
-        pdfDoc.setSubject("Dados para instrução do processo no SIPAC");
-        pdfDoc.setKeywords(["NIT", "UFCIMG", "SIPAC", "software"].concat(payload.software.palavras_chave || []));
-        pdfDoc.setProducer("Gerador de PDF do SIPAC — NIT/UFCIMG");
+        pdfDoc.setTitle("Comunicado de Invenção — " + (payload.software.titulo || "sem título"));
+        pdfDoc.setAuthor(INSTITUICAO.sigla + " — Coordenação de Inovação e Empreendedorismo");
+        pdfDoc.setSubject("Comunicado de Invenção de software — dados para instrução do processo no SIPAC");
+        pdfDoc.setKeywords(["NIT", INSTITUICAO.sigla, "SIPAC", "software"].concat(payload.software.palavras_chave || []));
+        pdfDoc.setProducer("Gerador de PDF do SIPAC — " + INSTITUICAO.sigla);
         pdfDoc.setCreationDate(new Date());
 
         var fluxo = { pagina: null, y: 0, primeiraPagina: true };
 
         function desenharCabecalho(){
-          fluxo.pagina.drawRectangle({ x: 0, y: ALTURA - 6, width: LARGURA, height: 6, color: COR_ACCENT });
-          fluxo.pagina.drawText("Submissão de software ao NIT/UFCIMG", {
-            x: MARGEM, y: fluxo.y, size: 17, font: fonteNegrito, color: COR_TINTA
+          var pg = fluxo.pagina;
+          pg.drawRectangle({ x: 0, y: ALTURA - 6, width: LARGURA, height: 6, color: COR_ACCENT });
+          var topo = fluxo.y + 10;
+          var baixo = topo - 66;
+          pg.drawRectangle({ x: MARGEM, y: baixo, width: 3.5, height: topo - baixo, color: COR_ACCENT });
+          var xTexto = MARGEM + 14;
+          fluxo.y -= 4;
+          pg.drawText(nomeESiglaInstituicao(), {
+            x: xTexto, y: fluxo.y, size: 10.5, font: fonteNegrito, color: COR_TINTA
           });
-          fluxo.y -= 20;
-          fluxo.pagina.drawText("Dados estruturados para instrução do processo no SIPAC", {
-            x: MARGEM, y: fluxo.y, size: 9.5, font: fonte, color: COR_TINTA_SUAVE
+          fluxo.y -= 14;
+          pg.drawText("Coordenação de Inovação e Empreendedorismo", {
+            x: xTexto, y: fluxo.y, size: 9.5, font: fonte, color: COR_TINTA_SUAVE
           });
-          var dataTexto = "Gerado em " + payload.gerado_em;
-          var largDataTexto = fonteMono.widthOfTextAtSize(dataTexto, 8);
-          fluxo.pagina.drawText(dataTexto, {
-            x: LARGURA - MARGEM - largDataTexto, y: fluxo.y, size: 8, font: fonteMono, color: COR_TINTA_FRACA
+          fluxo.y -= 28;
+          pg.drawText("Comunicado de Invenção", { x: xTexto, y: fluxo.y, size: 21, font: fonteNegrito, color: COR_ACCENT });
+          var dataTexto = "Gerado em " + dataBr(payload.gerado_em);
+          var largDataTexto = fonte.widthOfTextAtSize(dataTexto, 8.5);
+          pg.drawText(dataTexto, {
+            x: LARGURA - MARGEM - largDataTexto, y: fluxo.y + 2, size: 8.5, font: fonte, color: COR_TINTA_FRACA
           });
-          fluxo.y -= 18;
-          fluxo.pagina.drawLine({ start: { x: MARGEM, y: fluxo.y }, end: { x: LARGURA - MARGEM, y: fluxo.y }, thickness: 1, color: COR_LINHA });
-          fluxo.y -= 20;
+          fluxo.y = baixo - 22;
         }
 
         function novaPagina(){
@@ -1342,22 +1381,24 @@
           return linhas.length ? linhas : [""];
         }
 
-        function tituloSecao(texto){
-          garantirEspaco(26);
-          fluxo.pagina.drawText(texto, { x: MARGEM, y: fluxo.y, size: 12.5, font: fonteNegrito, color: COR_ACCENT });
-          fluxo.y -= 6;
+        function tituloSecao(texto, minimoApos){
+          // Título nunca fica sozinho no fim da página: exige espaço para o título e as primeiras linhas.
+          garantirEspaco(minimoApos || 70);
+          fluxo.y -= 12;
+          fluxo.pagina.drawRectangle({ x: MARGEM, y: fluxo.y - 1.5, width: 3, height: 13, color: COR_ACCENT });
+          fluxo.pagina.drawText(texto, { x: MARGEM + 9, y: fluxo.y, size: 12.5, font: fonteNegrito, color: COR_ACCENT });
+          fluxo.y -= 8;
           fluxo.pagina.drawLine({ start: { x: MARGEM, y: fluxo.y }, end: { x: LARGURA - MARGEM, y: fluxo.y }, thickness: 0.75, color: COR_LINHA });
-          fluxo.y -= 16;
+          fluxo.y -= 18;
         }
 
-        function cabecalhoEntidade(texto, destaque){
-          garantirEspaco(22);
-          if(destaque){
-            var largura = fonteNegrito.widthOfTextAtSize(texto, 10.5) + 12;
-            fluxo.pagina.drawRectangle({ x: MARGEM - 4, y: fluxo.y - 3, width: largura, height: 15, color: COR_ACCENT_SUAVE });
-          }
-          fluxo.pagina.drawText(texto, { x: MARGEM, y: fluxo.y, size: 10.5, font: fonteNegrito, color: destaque ? COR_ACCENT : COR_TINTA });
-          fluxo.y -= 16;
+        function cabecalhoEntidade(texto){
+          garantirEspaco(70);
+          fluxo.y -= 8;
+          var largura = Math.min(fonteNegrito.widthOfTextAtSize(texto, 10.5) + 16, LARGURA_UTIL);
+          fluxo.pagina.drawRectangle({ x: MARGEM, y: fluxo.y - 4, width: largura, height: 17, color: COR_ACCENT_SUAVE });
+          fluxo.pagina.drawText(texto, { x: MARGEM + 8, y: fluxo.y, size: 10.5, font: fonteNegrito, color: COR_ACCENT });
+          fluxo.y -= 22;
         }
 
         function linhaCampo(rotulo, valor, opcoes){
@@ -1366,30 +1407,40 @@
           var indent = opcoes.indent || 0;
           var largValor = LARGURA_UTIL - COL_LABEL - indent;
           var textoValor = (valor == null || valor === "") ? "—" : String(valor);
-          var linhasValor = quebrarTexto(textoValor, tamanho, fonte, largValor);
-          var lineHeight = tamanho + 3;
-          garantirEspaco(linhasValor.length * lineHeight + 4);
-          fluxo.pagina.drawText(rotulo, { x: MARGEM + indent, y: fluxo.y, size: tamanho, font: fonteNegrito, color: COR_TINTA_SUAVE });
-          linhasValor.forEach(function(l){
-            fluxo.pagina.drawText(l, { x: MARGEM + indent + COL_LABEL, y: fluxo.y, size: tamanho, font: fonte, color: COR_TINTA });
+          var fonteValor = opcoes.mono ? fonteMono : fonte;
+          // "quebra" corta em blocos fixos (hash); sem ela, quebra por palavra.
+          var linhasValor = opcoes.quebra ? dividirEmLinhas(textoValor, opcoes.quebra) : quebrarTexto(textoValor, tamanho, fonteValor, largValor);
+          var lineHeight = tamanho + 3.5;
+          // Rótulo longo quebra dentro da coluna dele em vez de invadir a do valor.
+          var linhasRotulo = quebrarTexto(rotulo, tamanho, fonteNegrito, COL_LABEL - 12);
+          var total = Math.max(linhasValor.length, linhasRotulo.length);
+          garantirEspaco(total * lineHeight + 8);
+          for(var k = 0; k < total; k++){
+            if(k < linhasRotulo.length){
+              fluxo.pagina.drawText(linhasRotulo[k], { x: MARGEM + indent, y: fluxo.y, size: tamanho, font: fonteNegrito, color: COR_TINTA_SUAVE });
+            }
+            if(k < linhasValor.length){
+              fluxo.pagina.drawText(linhasValor[k], { x: MARGEM + indent + COL_LABEL, y: fluxo.y, size: tamanho, font: fonteValor, color: COR_TINTA });
+            }
             fluxo.y -= lineHeight;
-          });
-          fluxo.y -= 3;
+          }
+          fluxo.y -= 5;
         }
 
         function paragrafoBloco(rotulo, texto, opcoes){
           opcoes = opcoes || {};
           var tamanho = opcoes.tamanho || 9.5;
-          garantirEspaco(tamanho + 6);
+          garantirEspaco(3 * (tamanho + 3) + tamanho + 10);
+          fluxo.y -= 3;
           fluxo.pagina.drawText(rotulo, { x: MARGEM, y: fluxo.y, size: tamanho, font: fonteNegrito, color: COR_TINTA_SUAVE });
-          fluxo.y -= (tamanho + 4);
+          fluxo.y -= (tamanho + 5);
           var linhas = quebrarTexto(texto || "—", tamanho, fonte, LARGURA_UTIL);
           linhas.forEach(function(l){
             garantirEspaco(tamanho + 3);
             fluxo.pagina.drawText(l, { x: MARGEM, y: fluxo.y, size: tamanho, font: fonte, color: COR_TINTA });
-            fluxo.y -= (tamanho + 3);
+            fluxo.y -= (tamanho + 3.5);
           });
-          fluxo.y -= 6;
+          fluxo.y -= 9;
         }
 
         function paragrafoSimples(texto, tamanho){
@@ -1405,27 +1456,32 @@
 
         function linhaCheckbox(texto, marcado){
           var tamanho = 9.5;
-          var largura = LARGURA_UTIL - 18;
+          var largura = LARGURA_UTIL - 22;
           var linhas = quebrarTexto(texto, tamanho, fonte, largura);
-          var lineHeight = tamanho + 3;
-          garantirEspaco(linhas.length * lineHeight + 4);
-          fluxo.pagina.drawRectangle({ x: MARGEM, y: fluxo.y - 8, width: 9, height: 9, borderColor: COR_TINTA_SUAVE, borderWidth: 0.75, color: marcado ? COR_ACCENT : COR_BRANCO });
+          var lineHeight = tamanho + 3.5;
+          garantirEspaco(linhas.length * lineHeight + 8);
+          var bx = MARGEM, by = fluxo.y - 2;
+          fluxo.pagina.drawRectangle({ x: bx, y: by, width: 10, height: 10, borderColor: marcado ? COR_ACCENT : COR_TINTA_SUAVE, borderWidth: 0.9, color: marcado ? COR_ACCENT : COR_BRANCO });
           if(marcado){
-            fluxo.pagina.drawText("x", { x: MARGEM + 1.8, y: fluxo.y - 7.3, size: 8, font: fonteNegrito, color: COR_BRANCO });
+            // Tick desenhado com dois traços, centrado na caixa (um "x" de texto ficava torto).
+            var tick = { thickness: 1.5, color: COR_BRANCO, lineCap: PDFLib.LineCapStyle.Round };
+            fluxo.pagina.drawLine(Object.assign({ start: { x: bx + 2.3, y: by + 5.3 }, end: { x: bx + 4.2, y: by + 3.1 } }, tick));
+            fluxo.pagina.drawLine(Object.assign({ start: { x: bx + 4.2, y: by + 3.1 }, end: { x: bx + 7.9, y: by + 7.4 } }, tick));
           }
           linhas.forEach(function(l){
-            fluxo.pagina.drawText(l, { x: MARGEM + 16, y: fluxo.y, size: tamanho, font: fonte, color: COR_TINTA });
+            fluxo.pagina.drawText(l, { x: MARGEM + 22, y: fluxo.y, size: tamanho, font: fonte, color: COR_TINTA });
             fluxo.y -= lineHeight;
           });
-          fluxo.y -= 3;
+          fluxo.y -= 6;
         }
 
         function desenharRodapes(){
           var paginas = pdfDoc.getPages();
           paginas.forEach(function(pagina, i){
             pagina.drawLine({ start: { x: MARGEM, y: 34 }, end: { x: LARGURA - MARGEM, y: 34 }, thickness: 0.5, color: COR_LINHA });
-            var texto = "NIT/UFCIMG — página " + (i + 1) + " de " + paginas.length;
-            pagina.drawText(texto, { x: MARGEM, y: 22, size: 7.5, font: fonteMono, color: COR_TINTA_FRACA });
+            pagina.drawText(INSTITUICAO.sigla + " · Coordenação de Inovação e Empreendedorismo · Comunicado de Invenção", { x: MARGEM, y: 22, size: 7.5, font: fonte, color: COR_TINTA_FRACA });
+            var texto = "Página " + (i + 1) + " de " + paginas.length;
+            pagina.drawText(texto, { x: LARGURA - MARGEM - fonte.widthOfTextAtSize(texto, 7.5), y: 22, size: 7.5, font: fonte, color: COR_TINTA_FRACA });
           });
         }
 
@@ -1433,16 +1489,24 @@
 
         tituloSecao("Identificação");
         linhaCampo("Título", payload.software.titulo);
-        linhaCampo("TRL", String(payload.software.trl || "—"));
-        linhaCampo("Origem", payload.software.origem.tipo + (payload.software.origem.vinculo ? " — " + payload.software.origem.vinculo : ""));
-        linhaCampo("Data de criação", payload.software.data_criacao);
-        linhaCampo("Data de publicação", payload.software.data_publicacao);
-        paragrafoBloco("Descrição do software:", payload.software.descricao_curta);
+        linhaCampo("Maturidade (TRL)", rotuloTrl(payload.software.trl));
+        linhaCampo("Origem", rotuloOrigem(payload.software.origem.tipo));
+        if(payload.software.origem.vinculo){
+          linhaCampo("Projeto, disciplina ou edital", payload.software.origem.vinculo);
+        }
+        linhaCampo("Data de criação", dataBr(payload.software.data_criacao));
+        linhaCampo("Data de publicação", dataBr(payload.software.data_publicacao));
+        paragrafoBloco("Descrição do software", payload.software.descricao_curta);
+        if(payload.software.informe_projeto){
+          paragrafoBloco("Informações sobre o projeto de origem", payload.software.informe_projeto);
+        }
+
+        tituloSecao("Maturidade e interesse");
         if(payload.maturidade && payload.maturidade.justificativa){
-          paragrafoBloco("Justificativa do TRL " + payload.software.trl + " (comprovantes anexados ao processo no SIPAC):", payload.maturidade.justificativa);
+          paragrafoBloco("Justificativa do " + rotuloTrl(payload.software.trl).split(" — ")[0] + " (comprovantes anexados ao processo no SIPAC)", payload.maturidade.justificativa);
         }
         if(payload.maturidade && payload.maturidade.empresa_interessada){
-          linhaCampo("Empresa/instituição interessada", payload.maturidade.empresa_interessada.razao_social);
+          linhaCampo("Empresa ou instituição interessada", payload.maturidade.empresa_interessada.razao_social);
           linhaCampo("CNPJ", payload.maturidade.empresa_interessada.cnpj);
           linhaCampo("Tipo de interesse", payload.maturidade.empresa_interessada.tipos_de_interesse.map(rotuloDoInteresse).join("; "));
           if(payload.maturidade.empresa_interessada.projeto_parceria){
@@ -1451,18 +1515,14 @@
           if(payload.maturidade.empresa_interessada.outro_descricao){
             linhaCampo("Outro interesse", payload.maturidade.empresa_interessada.outro_descricao);
           }
-          linhaCheckbox("Declaro que a carta de manifestação de interesse será anexada ao processo no SIPAC.", payload.maturidade.carta_interesse_sera_anexada);
         } else {
-          linhaCampo("Empresa/instituição interessada", "Não informada");
-        }
-        if(payload.software.informe_projeto){
-          paragrafoBloco("Projeto de pesquisa, extensão ou outros:", payload.software.informe_projeto);
+          linhaCampo("Empresa ou instituição interessada", "Não informada");
         }
 
         if(payload.instituicoes_parceiras.length > 0){
-          tituloSecao("Instituições Parceiras");
+          tituloSecao("Instituições parceiras", 130);
           payload.instituicoes_parceiras.forEach(function(inst, i){
-            cabecalhoEntidade("Instituição parceira " + (i + 1) + " — " + (inst.razao_social || "—"), false);
+            cabecalhoEntidade("Instituição parceira " + (i + 1) + " — " + (inst.razao_social || "—"));
             linhaCampo("CNPJ", inst.cnpj, { indent: 10 });
             linhaCampo("Endereço", inst.endereco, { indent: 10 });
           });
@@ -1472,30 +1532,19 @@
             payload.parceria.cotitularidade.forEach(function(c){
               linhaCampo(c.instituicao || "—", (c.percentual === "" || c.percentual == null ? "—" : c.percentual + "%"), { indent: 10 });
             });
-            payload.parceria.cotitularidade.slice(1).forEach(function(c){
-              paragrafoBloco("Contribuição de " + (c.instituicao || "—") + ":", c.justificativa);
+            cotitularesParceiras(payload.parceria.cotitularidade).forEach(function(c){
+              paragrafoBloco("Contribuição de " + (c.instituicao || "—"), c.justificativa);
             });
           }
         }
 
-        tituloSecao("Autores");
-        paragrafoSimples(
-          "Indicar um autor correspondente não isenta os demais autores da responsabilidade de acompanhar o " +
-          "processo até a homologação da proteção, publicada na RPI. A titularidade patrimonial do software segue " +
-          "a Política de Inovação da UFCIMG; o direito moral de autoria permanece sempre com cada autor listado, " +
-          "independentemente de quem detenha os direitos patrimoniais. Cada autor deve manter a guarda de uma " +
-          "cópia do software desenvolvido.",
-          8.5
-        );
+        tituloSecao("Autores", 150);
         payload.autores.forEach(function(autor, i){
-          cabecalhoEntidade(
-            (i === 0 ? "Autor correspondente — " : "Autor " + (i + 1) + " — ") + (autor.nome || "—"),
-            i === 0
-          );
+          cabecalhoEntidade((i === 0 ? "Autor correspondente — " : "Autor " + (i + 1) + " — ") + (autor.nome || "—"));
           linhaCampo("Nacionalidade", autor.nacionalidade, { indent: 10 });
-          linhaCampo("CPF", autor.cpf, { indent: 10 });
+          linhaCampo("CPF", cpfBr(autor.cpf), { indent: 10 });
           linhaCampo("Instituição", autor.instituicao_nome, { indent: 10 });
-          if(autor.instituicao_tipo === "cefetmg"){
+          if(autor.instituicao_tipo === "propria"){
             linhaCampo("Campus", autor.campus, { indent: 10 });
           }
           if(autor.tipo_vinculo){
@@ -1518,12 +1567,12 @@
         linhaCampo("Tipo de programa", (payload.software.tipo_programa || []).join("; "));
         linhaCampo("Palavras-chave", (payload.software.palavras_chave || []).join(", "));
 
-        tituloSecao("Programa a Proteger");
+        tituloSecao("Programa a proteger");
         linhaCampo("Repositório", payload.release.repositorio);
         linhaCampo("Release", payload.release.tag);
-        linhaCampo("SHA-512", payload.release.sha512, { tamanho: 6.5 });
+        linhaCampo("SHA-512", payload.release.sha512, { tamanho: 8, mono: true, quebra: 64 });
 
-        tituloSecao("Derivação Autorizada");
+        tituloSecao("Derivação autorizada");
         linhaCampo("Derivação autorizada?", payload.derivacao.autorizada ? "Sim" : "Não");
         if(payload.derivacao.autorizada){
           linhaCampo("Programa original — título", payload.derivacao.titulo_original, { indent: 10 });
@@ -1532,23 +1581,21 @@
           linhaCheckbox("Declaro que os autores do software são responsáveis pela guarda do documento que autoriza esta derivação.", payload.declaracoes.guarda_autorizacao_derivacao);
         }
 
-        tituloSecao("Comercialização da Tecnologia");
+        tituloSecao("Comercialização da tecnologia");
         linhaCheckbox(
           "Me comprometo a informar a CIE e os demais autores sobre a existência de negociação que poderá resultar no licenciamento da TECNOLOGIA, no qual necessitará firmar um instrumento jurídico com as condições dessa comercialização.",
           payload.comercializacao.compromisso_informar_cie
         );
 
-        tituloSecao("Declarações de responsabilidade e veracidade das informações");
+        // Sem bloco "Declarante": quem assina é o declarante, e o SIPAC lista as assinaturas logo abaixo do PDF.
+        // As declarações ficam juntas numa só página.
+        tituloSecao("Declarações de responsabilidade e veracidade das informações", 330);
         linhaCheckbox("Declaro que assumo inteira responsabilidade pelo acompanhamento das informações do processo de pedido de registro de programa de computador.", payload.declaracoes.responsabilidade_acompanhamento);
         linhaCheckbox("Declaro que assumo inteira responsabilidade pela realização da Busca de Anterioridade nos casos em que esta se fizer necessária.", payload.declaracoes.responsabilidade_busca_anterioridade);
         linhaCheckbox("Declaro ciência dos custos de abertura do processo junto ao INPI e de cada ato do processo do pedido de programa de computador.", payload.declaracoes.ciencia_custos_inpi);
         linhaCheckbox("Declaro que guardarei, de forma segura e separada, o arquivo compactado usado para gerar o hash do código-fonte, pelo prazo de vigência da proteção legal (50 anos, art. 2º, §2º da Lei nº 9.609/98).", payload.declaracoes.guarda_hash_50_anos);
         linhaCheckbox("Declaro que cada autor manterá a guarda de uma cópia do software a ser protegido, pelo prazo de vigência da proteção legal (50 anos, art. 2º, §2º da Lei nº 9.609/98), para eventual necessidade de comprovação ou modificação futura.", payload.declaracoes.guarda_copia_autores);
         linhaCheckbox("Declaro que as informações relativas aos dados contidos neste formulário são verdadeiras e autênticas (fiéis à verdade e condizentes com a realidade dos fatos à época).", payload.declaracoes.veracidade_informacoes);
-        var declarante = (payload.autores && payload.autores[0]) || {};
-        linhaCampo("Declarante", (declarante.nome || "—") + " — autor correspondente, requerente do registro");
-        linhaCampo("CPF do declarante", declarante.cpf);
-        linhaCampo("Data da declaração", payload.gerado_em);
 
         // Só ASCII: todo caractere acima de 0x7e vira \uXXXX. É o mesmo JSON (o parser devolve
         // exatamente os mesmos textos), mas o bloco impresso nunca tem caractere que a fonte
@@ -1711,9 +1758,9 @@
     renderCotitularidade();
     if(payload.parceria){
       if(Array.isArray(payload.parceria.cotitularidade)){
-        var cefetEntry = payload.parceria.cotitularidade[0];
-        if(cefetEntry) $("cotitularidade-cefetmg").value = cefetEntry.percentual != null ? String(cefetEntry.percentual) : "";
-        payload.parceria.cotitularidade.slice(1).forEach(function(c, i){
+        var propriaEntry = payload.parceria.cotitularidade.filter(function(c){ return c.instituicao_tipo === "propria"; })[0];
+        $("cotitularidade-propria").value = propriaEntry && propriaEntry.percentual != null ? String(propriaEntry.percentual) : "";
+        cotitularesParceiras(payload.parceria.cotitularidade).forEach(function(c, i){
           var input = document.querySelector('#cotitularidade-parceiras-list [data-idx="' + i + '"]');
           if(input) input.value = c.percentual != null ? String(c.percentual) : "";
           var ta = document.querySelector('#cotitularidade-justificativas-list [data-just-idx="' + i + '"]');
@@ -1721,7 +1768,7 @@
         });
       }
     } else {
-      $("cotitularidade-cefetmg").value = "";
+      $("cotitularidade-propria").value = "";
     }
 
     formularioSujo = false;
@@ -1733,6 +1780,12 @@
 
   // ================= inicialização =================
 
+  [document].concat(Array.prototype.map.call(document.querySelectorAll("template"), function(t){ return t.content; }))
+    .forEach(function(raiz){
+      raiz.querySelectorAll("[data-instituicao]").forEach(function(el){
+        el.textContent = el.getAttribute("data-instituicao") === "nome-e-sigla" ? nomeESiglaInstituicao() : INSTITUICAO.sigla;
+      });
+    });
   $("repo-prefix-badge").textContent = GITHUB_ORG + "/";
   $("link-tabela-area").href = LINK_TABELA_CAMPO_APLICACAO;
   $("link-tabela-tipo").href = LINK_TABELA_TIPO_PROGRAMA;

@@ -4,9 +4,18 @@
 // Prefixo fixo da organização no GitHub. Único lugar a mudar se o org mudar.
 var GITHUB_ORG = "ufcimg";
 
-// Domínio do e-mail institucional. Único lugar a mudar se o domínio mudar
-// (ex.: por causa da transformação em UFCI — ver CLAUDE.md na raiz do pacote).
-var EMAIL_DOMINIO_CEFETMG = "cefetmg.br";
+// Nome da instituição titular. Único lugar a mudar se o nome mudar: o
+// index.html preenche os elementos marcados com data-instituicao a partir
+// daqui, e o PDF e as mensagens de validação também leem estes valores.
+// No JSON, a instituição se identifica por instituicao_tipo "propria", nunca
+// pelo nome.
+var INSTITUICAO = {
+  sigla: "UFCIMG",
+  nome: "Universidade Federal de Ciência e Inovação de Minas Gerais"
+};
+
+// Domínio do e-mail institucional. Único lugar a mudar se o domínio mudar.
+var EMAIL_DOMINIO_INSTITUCIONAL = "cefetmg.br";
 
 // TRL a partir do qual o registro exige justificativa com comprovantes e
 // manifestação de interesse de empresa/instituição (INPI).
@@ -38,8 +47,8 @@ var LINGUAGENS_COMUNS = ["Python","JavaScript","TypeScript",
                       "Java","C","C++","C#","PHP","Go","R",
                       "SQL","HTML/CSS","Shell/Bash","Kotlin"];
 
-// Campi da UFCIMG usados no seletor de Campus (autor com Instituição = UFCIMG).
-var CAMPUS_CEFETMG = [
+// Campi da instituição usados no seletor de Campus (autor com instituicao_tipo "propria").
+var CAMPI_INSTITUICAO = [
   "BH/Nova Suíça", "BH/Nova Gameleira", "BH/Gameleira",
   "Araxá", "Contagem", "Curvelo", "Divinópolis",
   "Leopoldina", "Nepomuceno", "Timóteo", "Varginha"
