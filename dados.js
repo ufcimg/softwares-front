@@ -48,10 +48,20 @@ var INTERESSE_TIPOS = [
 // `valor` é o que vai no JSON do PDF; `rotulo` é o que o docente vê e sai no PDF.
 var PROJETO_RELACIONADO_TIPOS = [
   { valor: "processo_sipac", rotulo: "Processo no SIPAC" },
-  { valor: "extensao", rotulo: "Projeto de extensão" },
+  { valor: "extensao", rotulo: "Ação de extensão" },
   { valor: "pesquisa", rotulo: "Projeto de pesquisa" },
+  { valor: "fomento_externo", rotulo: "Projeto com fomento externo" },
   { valor: "edital", rotulo: "Edital" },
   { valor: "outro", rotulo: "Outro" }
+];
+
+// Agências de fomento de um projeto relacionado do tipo "fomento_externo".
+// Com "outra", o docente escreve o nome em `agencia_fomento_outra`.
+var AGENCIAS_FOMENTO = [
+  { valor: "cnpq", rotulo: "CNPq" },
+  { valor: "fapemig", rotulo: "FAPEMIG" },
+  { valor: "capes", rotulo: "CAPES" },
+  { valor: "outra", rotulo: "Outra" }
 ];
 
 // Quantidade de palavras-chave aceitas na etapa Classificação.

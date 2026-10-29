@@ -115,7 +115,7 @@
 
         <div class="field">
           <label>Projetos relacionados <span class="opt-note">(opcional)</span></label>
-          <p class="field-hint">Informe o identificador de cada projeto ligado a este software: o número do processo no SIPAC, o código do projeto de extensão ou de pesquisa, o número do edital. Pode haver mais de um.</p>
+          <p class="field-hint">Informe o identificador de cada projeto ligado a este software: o número do processo no SIPAC, o código da ação de extensão ou do projeto de pesquisa, o número do projeto com fomento externo (com a agência de fomento), o número do edital. Pode haver mais de um.</p>
           <div id="projetos-list"></div>
           <button type="button" class="btn-add" id="add-projeto">+ Adicionar projeto relacionado</button>
         </div>
@@ -545,6 +545,18 @@
       <div class="field">
         <label>Identificador <span class="req">*</span></label>
         <input type="text" data-campo="identificador" autocomplete="off" placeholder="Número do processo ou código do projeto">
+        <p class="field-error" hidden></p>
+      </div>
+    </div>
+    <div class="row2 bloco-fomento" hidden>
+      <div class="field">
+        <label>Agência de fomento <span class="req">*</span></label>
+        <select data-campo="agencia_fomento"></select>
+        <p class="field-error" hidden></p>
+      </div>
+      <div class="field bloco-agencia-outra" hidden>
+        <label>Qual agência? <span class="req">*</span></label>
+        <input type="text" data-campo="agencia_fomento_outra" autocomplete="off" placeholder="Nome da agência de fomento">
         <p class="field-error" hidden></p>
       </div>
     </div>

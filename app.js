@@ -8,7 +8,7 @@
   }
 
   function projetoRelacionadoVazio(){
-    return { tipo: "", identificador: "" };
+    return { tipo: "", identificador: "", agencia_fomento: "", agencia_fomento_outra: "" };
   }
 
   function autorVazio(){
@@ -163,6 +163,13 @@
   function rotuloProjetoRelacionado(v){
     var t = PROJETO_RELACIONADO_TIPOS.filter(function(x){ return x.valor === v; })[0];
     return t ? t.rotulo : (v || "—");
+  }
+
+  // Nome da agência impresso no PDF: o rótulo da lista, ou o texto digitado em "Outra".
+  function rotuloAgenciaFomento(p){
+    if(p.agencia_fomento === "outra") return p.agencia_fomento_outra || "Outra";
+    var a = AGENCIAS_FOMENTO.filter(function(x){ return x.valor === p.agencia_fomento; })[0];
+    return a ? a.rotulo : (p.agencia_fomento || "—");
   }
 
   function rotuloTrl(n){
@@ -363,13 +370,15 @@
     var card = fragmento.querySelector(".card");
     card.querySelector(".projeto-titulo").textContent = "Projeto relacionado " + (index + 1);
 
-    var select = card.querySelector('[data-campo="tipo"]');
-    select.innerHTML = '<option value="">Selecione</option>';
-    PROJETO_RELACIONADO_TIPOS.forEach(function(t){
-      var opt = document.createElement("option");
-      opt.value = t.valor;
-      opt.textContent = t.rotulo;
-      select.appendChild(opt);
+    [["tipo", PROJETO_RELACIONADO_TIPOS], ["agencia_fomento", AGENCIAS_FOMENTO]].forEach(function(par){
+      var select = card.querySelector('[data-campo="' + par[0] + '"]');
+      select.innerHTML = '<option value="">Selecione</option>';
+      par[1].forEach(function(t){
+        var opt = document.createElement("option");
+        opt.value = t.valor;
+        opt.textContent = t.rotulo;
+        select.appendChild(opt);
+      });
     });
 
     card.querySelector('[data-action="remover"]').addEventListener("click", function(){
@@ -382,8 +391,16 @@
       var nome = campo.dataset.campo;
       campo.value = projeto[nome] != null ? projeto[nome] : "";
     });
+    atualizarBlocosProjeto(card, projeto);
 
     return card;
+  }
+
+  // A agência só aparece para projeto com fomento externo; o nome livre, só com "Outra".
+  function atualizarBlocosProjeto(card, projeto){
+    var fomento = projeto.tipo === "fomento_externo";
+    card.querySelector(".bloco-fomento").hidden = !fomento;
+    card.querySelector(".bloco-agencia-outra").hidden = !(fomento && projeto.agencia_fomento === "outra");
   }
 
   function renderProjetos(){
@@ -401,6 +418,7 @@
     var index = Array.prototype.indexOf.call($("projetos-list").children, card);
     if(index === -1) return;
     state.projetos_relacionados[index][campo.dataset.campo] = campo.value;
+    atualizarBlocosProjeto(card, state.projetos_relacionados[index]);
   }
 
   // ================= instituições parceiras =================
@@ -822,6 +840,10 @@
       var rotulo = "Projeto relacionado " + (i + 1);
       if(!p.tipo) out.push({ step: "identificacao", el: campo("tipo"), message: rotulo + ": selecione o tipo" });
       if(!p.identificador) out.push({ step: "identificacao", el: campo("identificador"), message: rotulo + ": informe o identificador (ou remova o projeto)" });
+      if(p.tipo === "fomento_externo"){
+        if(!p.agencia_fomento) out.push({ step: "identificacao", el: campo("agencia_fomento"), message: rotulo + ": selecione a agência de fomento" });
+        else if(p.agencia_fomento === "outra" && !p.agencia_fomento_outra) out.push({ step: "identificacao", el: campo("agencia_fomento_outra"), message: rotulo + ": informe qual é a agência de fomento" });
+      }
     });
     return out;
   }
@@ -1072,7 +1094,13 @@
         data_publicacao: $("data_publicacao").value,
         informe_projeto: $("informe_projeto").value.trim(),
         projetos_relacionados: state.projetos_relacionados.map(function(p){
-          return { tipo: p.tipo, identificador: (p.identificador || "").trim() };
+          var item = { tipo: p.tipo, identificador: (p.identificador || "").trim() };
+          // Agência só no projeto com fomento externo; o nome livre, só com "outra".
+          if(p.tipo === "fomento_externo"){
+            item.agencia_fomento = p.agencia_fomento;
+            if(p.agencia_fomento === "outra") item.agencia_fomento_outra = (p.agencia_fomento_outra || "").trim();
+          }
+          return item;
         }),
         possui_colaborador_externo: possuiColaboradorExterno,
         possui_empresa_interessada: temEmpresaInteressada()
@@ -1569,7 +1597,9 @@
           paragrafoBloco("Informações sobre o projeto de origem", payload.software.informe_projeto);
         }
         payload.software.projetos_relacionados.forEach(function(p){
-          linhaCampo("Projeto relacionado", rotuloProjetoRelacionado(p.tipo) + ": " + p.identificador);
+          var tipo = rotuloProjetoRelacionado(p.tipo);
+          if(p.tipo === "fomento_externo") tipo += " (" + rotuloAgenciaFomento(p) + ")";
+          linhaCampo("Projeto relacionado", tipo + ": " + p.identificador);
         });
 
         tituloSecao("Maturidade e interesse");
@@ -1734,7 +1764,10 @@
     $("data_publicacao").value = sw.data_publicacao || "";
     $("informe_projeto").value = sw.informe_projeto || "";
     state.projetos_relacionados = (Array.isArray(sw.projetos_relacionados) ? sw.projetos_relacionados : []).map(function(p){
-      return { tipo: (p && p.tipo) || "", identificador: (p && p.identificador) || "" };
+      return {
+        tipo: (p && p.tipo) || "", identificador: (p && p.identificador) || "",
+        agencia_fomento: (p && p.agencia_fomento) || "", agencia_fomento_outra: (p && p.agencia_fomento_outra) || ""
+      };
     });
     renderProjetos();
 

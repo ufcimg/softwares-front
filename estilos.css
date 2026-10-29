@@ -279,6 +279,7 @@ input:focus, select:focus, textarea:focus{
   grid-template-columns: 1fr 1fr;
   gap: 14px;
 }
+.row2[hidden]{ display: none; }
 @media (max-width: 480px){ .row2{ grid-template-columns: 1fr; } }
 
 .char-count{
