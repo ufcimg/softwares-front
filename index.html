@@ -108,9 +108,16 @@
 
         <div class="field">
           <label for="informe_projeto">Informe sobre projeto de Pesquisa, Extensão ou Outros <span class="opt-note">(detalhe a origem acima, se aplicável)</span></label>
-          <p class="field-hint">Se este programa surgiu de um algum projeto (Pesquisa, Extensão, Edital, P&amp;D...), detalhe aqui — inclua no processo do SIPAC, quando for o caso, o documento que autoriza o projeto e as aprovações prévias dos setores da <span data-instituicao="sigla"></span>.</p>
+          <p class="field-hint">Se este programa surgiu de algum projeto (Pesquisa, Extensão, Edital, P&amp;D...), detalhe aqui. Os identificadores dos projetos vão no campo abaixo.</p>
           <textarea id="informe_projeto"></textarea>
           <p class="field-error" hidden></p>
+        </div>
+
+        <div class="field">
+          <label>Projetos relacionados <span class="opt-note">(opcional)</span></label>
+          <p class="field-hint">Informe o identificador de cada projeto ligado a este software: o número do processo no SIPAC, o código do projeto de extensão ou de pesquisa, o número do edital. Pode haver mais de um.</p>
+          <div id="projetos-list"></div>
+          <button type="button" class="btn-add" id="add-projeto">+ Adicionar projeto relacionado</button>
         </div>
 
         <div class="row2">
@@ -522,6 +529,27 @@
   </div>
  </div>
 </div>
+
+<template id="tpl-projeto">
+  <div class="card">
+    <div class="card-head">
+      <span class="projeto-titulo"></span>
+      <button type="button" class="remove-btn" data-action="remover">Remover</button>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Tipo <span class="req">*</span></label>
+        <select data-campo="tipo"></select>
+        <p class="field-error" hidden></p>
+      </div>
+      <div class="field">
+        <label>Identificador <span class="req">*</span></label>
+        <input type="text" data-campo="identificador" autocomplete="off" placeholder="Número do processo ou código do projeto">
+        <p class="field-error" hidden></p>
+      </div>
+    </div>
+  </div>
+</template>
 
 <template id="tpl-instituicao">
   <div class="card">

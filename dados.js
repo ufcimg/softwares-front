@@ -44,6 +44,16 @@ var INTERESSE_TIPOS = [
   { valor: "outro", rotulo: "Outro" }
 ];
 
+// Tipos de projeto relacionado ao software (etapa Identificação; pode haver vários).
+// `valor` é o que vai no JSON do PDF; `rotulo` é o que o docente vê e sai no PDF.
+var PROJETO_RELACIONADO_TIPOS = [
+  { valor: "processo_sipac", rotulo: "Processo no SIPAC" },
+  { valor: "extensao", rotulo: "Projeto de extensão" },
+  { valor: "pesquisa", rotulo: "Projeto de pesquisa" },
+  { valor: "edital", rotulo: "Edital" },
+  { valor: "outro", rotulo: "Outro" }
+];
+
 // Quantidade de palavras-chave aceitas na etapa Classificação.
 var MIN_PALAVRAS_CHAVE = 2;
 var MAX_PALAVRAS_CHAVE = 5;

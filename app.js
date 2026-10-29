@@ -7,6 +7,10 @@
     return { razao_social: "", cnpj: "", endereco: "" };
   }
 
+  function projetoRelacionadoVazio(){
+    return { tipo: "", identificador: "" };
+  }
+
   function autorVazio(){
     return {
       nome: "", nacionalidade: "", cpf: "",
@@ -22,6 +26,7 @@
     area_aplicacao: [],
     tipo_programa: [],
     palavras_chave: [],
+    projetos_relacionados: [],
     instituicoes_parceiras: [],
     autores: [autorVazio()]
   };
@@ -153,6 +158,11 @@
   // Rótulos e formatos só do texto impresso no PDF; o JSON continua com os valores crus.
   function rotuloOrigem(v){
     return { pesquisa: "Pesquisa", ensino: "Ensino", extensao: "Extensão", projeto_fomento: "Projeto com fomento", outro: "Outro" }[v] || v || "—";
+  }
+
+  function rotuloProjetoRelacionado(v){
+    var t = PROJETO_RELACIONADO_TIPOS.filter(function(x){ return x.valor === v; })[0];
+    return t ? t.rotulo : (v || "—");
   }
 
   function rotuloTrl(n){
@@ -344,6 +354,53 @@
         input.focus();
       }
     });
+  }
+
+  // ================= projetos relacionados =================
+
+  function criarCardProjeto(projeto, index){
+    var fragmento = $("tpl-projeto").content.cloneNode(true);
+    var card = fragmento.querySelector(".card");
+    card.querySelector(".projeto-titulo").textContent = "Projeto relacionado " + (index + 1);
+
+    var select = card.querySelector('[data-campo="tipo"]');
+    select.innerHTML = '<option value="">Selecione</option>';
+    PROJETO_RELACIONADO_TIPOS.forEach(function(t){
+      var opt = document.createElement("option");
+      opt.value = t.valor;
+      opt.textContent = t.rotulo;
+      select.appendChild(opt);
+    });
+
+    card.querySelector('[data-action="remover"]').addEventListener("click", function(){
+      state.projetos_relacionados.splice(index, 1);
+      renderProjetos();
+      renderTudo();
+    });
+
+    card.querySelectorAll("[data-campo]").forEach(function(campo){
+      var nome = campo.dataset.campo;
+      campo.value = projeto[nome] != null ? projeto[nome] : "";
+    });
+
+    return card;
+  }
+
+  function renderProjetos(){
+    var container = $("projetos-list");
+    container.innerHTML = "";
+    state.projetos_relacionados.forEach(function(projeto, i){
+      container.appendChild(criarCardProjeto(projeto, i));
+    });
+  }
+
+  function sincronizarCampoProjeto(e){
+    var campo = e.target.closest("[data-campo]");
+    if(!campo) return;
+    var card = e.target.closest(".card");
+    var index = Array.prototype.indexOf.call($("projetos-list").children, card);
+    if(index === -1) return;
+    state.projetos_relacionados[index][campo.dataset.campo] = campo.value;
   }
 
   // ================= instituições parceiras =================
@@ -758,6 +815,14 @@
     if(sw.data_criacao && sw.data_publicacao && sw.data_publicacao <= sw.data_criacao){
       out.push({ step: "identificacao", el: $("data_publicacao"), message: "Data de publicação precisa ser posterior à data de criação" });
     }
+    var projetos = $("projetos-list");
+    sw.projetos_relacionados.forEach(function(p, i){
+      var card = projetos.children[i];
+      function campo(nome){ return card && card.querySelector('[data-campo="' + nome + '"]'); }
+      var rotulo = "Projeto relacionado " + (i + 1);
+      if(!p.tipo) out.push({ step: "identificacao", el: campo("tipo"), message: rotulo + ": selecione o tipo" });
+      if(!p.identificador) out.push({ step: "identificacao", el: campo("identificador"), message: rotulo + ": informe o identificador (ou remova o projeto)" });
+    });
     return out;
   }
 
@@ -1006,6 +1071,9 @@
         data_criacao: $("data_criacao").value,
         data_publicacao: $("data_publicacao").value,
         informe_projeto: $("informe_projeto").value.trim(),
+        projetos_relacionados: state.projetos_relacionados.map(function(p){
+          return { tipo: p.tipo, identificador: (p.identificador || "").trim() };
+        }),
         possui_colaborador_externo: possuiColaboradorExterno,
         possui_empresa_interessada: temEmpresaInteressada()
       },
@@ -1500,6 +1568,9 @@
         if(payload.software.informe_projeto){
           paragrafoBloco("Informações sobre o projeto de origem", payload.software.informe_projeto);
         }
+        payload.software.projetos_relacionados.forEach(function(p){
+          linhaCampo("Projeto relacionado", rotuloProjetoRelacionado(p.tipo) + ": " + p.identificador);
+        });
 
         tituloSecao("Maturidade e interesse");
         if(payload.maturidade && payload.maturidade.justificativa){
@@ -1662,6 +1733,10 @@
     $("data_criacao").value = sw.data_criacao || "";
     $("data_publicacao").value = sw.data_publicacao || "";
     $("informe_projeto").value = sw.informe_projeto || "";
+    state.projetos_relacionados = (Array.isArray(sw.projetos_relacionados) ? sw.projetos_relacionados : []).map(function(p){
+      return { tipo: (p && p.tipo) || "", identificador: (p && p.identificador) || "" };
+    });
+    renderProjetos();
 
     replaceTagValues("linguagens", sw.linguagens);
     replaceTagValues("area_aplicacao", sw.area_aplicacao);
@@ -1818,6 +1893,15 @@
 
   buildSearchPicker("area-search", "area-listbox", CAMPO_APLICACAO_ITEMS, "area_aplicacao");
   buildSearchPicker("tipo-search", "tipo-listbox", TIPO_PROGRAMA_ITEMS, "tipo_programa");
+
+  renderProjetos();
+  $("add-projeto").addEventListener("click", function(){
+    state.projetos_relacionados.push(projetoRelacionadoVazio());
+    renderProjetos();
+    renderTudo();
+  });
+  $("projetos-list").addEventListener("input", sincronizarCampoProjeto);
+  $("projetos-list").addEventListener("change", sincronizarCampoProjeto);
 
   renderInstituicoes();
   $("add-instituicao").addEventListener("click", function(){
