@@ -14,6 +14,14 @@ var INSTITUICAO = {
   nome: "Universidade Federal de Ciência e Inovação de Minas Gerais"
 };
 
+// Versão do formato do JSON que vai no PDF (anexo submissao.json e bloco
+// sentinela) e no "Salvar rascunho". Quem lê esse JSON (a extensão do NIT e o
+// "Carregar rascunho") usa o número para saber qual formato recebeu. Depois que
+// houver PDF no SIPAC, mudanças no formato só acrescentam chaves opcionais;
+// remover, renomear ou mudar o tipo de uma chave exige subir o número maior e
+// fazer os leitores aceitarem as duas versões.
+var VERSAO_FLUXO = "0.3";
+
 // Domínio do e-mail institucional. Único lugar a mudar se o domínio mudar.
 var EMAIL_DOMINIO_INSTITUCIONAL = "cefetmg.br";
 

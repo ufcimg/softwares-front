@@ -1035,7 +1035,7 @@
         repositorio: GITHUB_ORG + "/" + $("release-repo-sufixo").value.trim()
       },
       gerado_em: new Date().toISOString().slice(0, 10),
-      versao_fluxo: "0.3"
+      versao_fluxo: VERSAO_FLUXO
     };
 
     if(instituicoesValidas.length > 0){

@@ -8,7 +8,7 @@ GitHub Pages.
 
 | Ferramenta | Arquivo | Para quê |
 |---|---|---|
-| Gerador do PDF do SIPAC — wizard em etapas | [`docs/index.html`](docs/index.html) (shell + biblioteca vendorizada) + [`docs/app.js`](docs/app.js) (lógica) + [`docs/dados.js`](docs/dados.js) (tabelas do INPI, qualificações, campi, constantes) + [`docs/estilos.css`](docs/estilos.css) | O docente preenche em etapas — identificação, instituições parceiras, autores, classificação, artefato a proteger, declarações — e recebe o PDF pronto para anexar ao processo no SIPAC |
+| Gerador do PDF do SIPAC — wizard em etapas | [`index.html`](index.html) (shell + biblioteca vendorizada) + [`app.js`](app.js) (lógica) + [`dados.js`](dados.js) (tabelas do INPI, qualificações, campi, constantes) + [`estilos.css`](estilos.css) | O docente preenche em etapas — identificação, instituições parceiras, autores, classificação, artefato a proteger, declarações — e recebe o PDF pronto para anexar ao processo no SIPAC |
 
 Substituiu o script Python que antes vivia no repositório template e precisava
 ser instalado na máquina do docente. Navegador todo mundo já tem.
@@ -20,10 +20,10 @@ contradição com o repositório ser público, mas exige que uma propriedade sej
 verdadeira e continue verdadeira: **nada do que é digitado sai do navegador.**
 
 Não há backend. Não há chamada de rede. A biblioteca de geração de PDF está
-*vendorizada* — colada dentro do próprio `docs/index.html`, entre os marcadores
+*vendorizada* — colada dentro do próprio `index.html`, entre os marcadores
 `BEGIN VENDOR` / `END VENDOR` — em vez de carregada de um CDN, justamente para
-que nenhum terceiro possa trocar o código debaixo de nós. `docs/app.js`,
-`docs/dados.js` e `docs/estilos.css` são carregados só do próprio repositório
+que nenhum terceiro possa trocar o código debaixo de nós. `app.js`,
+`dados.js` e `estilos.css` são carregados só do próprio repositório
 (`script-src`/`style-src 'self'` no CSP) — nunca de CDN. O PDF é montado
 localmente e baixado direto.
 
@@ -35,7 +35,7 @@ que está publicado é o formulário vazio, não dado de submissão.
 
 | Trava | Onde |
 |---|---|
-| `Content-Security-Policy` com `connect-src 'none'` e `script-src`/`style-src 'self'` | meta tag no topo do `docs/index.html` |
+| `Content-Security-Policy` com `connect-src 'none'` e `script-src`/`style-src 'self'` | meta tag no topo do `index.html` |
 | Nenhuma referência externa fora do bloco vendorizado, em nenhum dos quatro arquivos | [`sem-rede.yml`](.github/workflows/sem-rede.yml) |
 | Bloco vendorizado íntegro | hash fixado em [`vendor-pdf-lib.sha256`](.github/vendor-pdf-lib.sha256) |
 
@@ -52,10 +52,10 @@ intenção visível na revisão.
 
 ## Publicar no GitHub Pages
 
-`Settings → Pages → Source: Deploy from a branch → main → /docs`.
+`Settings → Pages → Source: Deploy from a branch → main → / (root)`.
 
-Sem build. Editou `docs/index.html`, `docs/app.js`, `docs/dados.js` ou
-`docs/estilos.css`, é só dar push.
+Sem build. Editou `index.html`, `app.js`, `dados.js` ou
+`estilos.css`, é só dar push.
 
 ## Atualizar a biblioteca de PDF
 
@@ -64,11 +64,11 @@ Sem build. Editou `docs/index.html`, `docs/app.js`, `docs/dados.js` ou
    buscar o mapa de origem, que é exatamente a chamada de rede que não pode
    existir.
 3. Cole entre os marcadores `BEGIN VENDOR` / `END VENDOR`, dentro de
-   `docs/index.html`.
+   `index.html`.
 4. Recalcule o hash de referência, no mesmo commit:
 
 ```bash
-sed -n '/BEGIN VENDOR/,/END VENDOR/p' docs/index.html \
+sed -n '/BEGIN VENDOR/,/END VENDOR/p' index.html \
   | sha256sum | awk '{print $1"  index.html.vendor-block"}' > .github/vendor-pdf-lib.sha256
 ```
 
@@ -92,15 +92,33 @@ dois respondem perguntas diferentes.
 
 Dados constantes e de autocomplete (tabelas de Área de Aplicação/Tipo de
 Programa do INPI, qualificações profissionais, campi da UFCIMG, o prefixo
-`GITHUB_ORG`) ficam isolados em `docs/dados.js` — é o único arquivo a mexer
-para atualizar essas listas. A lógica do wizard (etapas, validação por campo,
-geração do PDF) fica em `docs/app.js`.
+`GITHUB_ORG`, a versão do formato `VERSAO_FLUXO`) ficam isolados em
+`dados.js` — é o único arquivo a mexer para atualizar essas listas. A lógica do wizard (etapas, validação por campo,
+geração do PDF) fica em `app.js`.
 
-O formato do payload embutido no PDF (`submissao.json` + bloco sentinela)
-carrega `versao_fluxo` justamente para a extensão do NIT (que lê esse PDF do
-lado do SIPAC) saber quando o formato mudou — qualquer alteração de campo
-aqui precisa ser avisada a quem mantém a extensão antes de PDFs novos
-começarem a circular.
+### Versão do formato (`VERSAO_FLUXO`)
+
+O JSON embutido no PDF (`submissao.json` + bloco sentinela) e o do "Salvar
+rascunho" carregam `versao_fluxo`, cujo valor vem da constante `VERSAO_FLUXO`
+em `dados.js`. Ela existe para a **interoperabilidade entre versões**: um PDF
+fica décadas no SIPAC, então a extensão do NIT (que lê esse PDF do lado do
+SIPAC) e o "Carregar rascunho" vão receber JSON de versões antigas e precisam
+saber qual formato têm nas mãos.
+
+A regra, a partir da primeira publicação (hoje ainda é ensaio, e o formato
+mudou várias vezes sem trocar o número):
+
+- **Mudança aditiva** (chave nova e opcional): mantém o número. Leitor antigo
+  ignora a chave; leitor novo trata a ausência dela.
+- **Mudança incompatível** (remover, renomear ou mudar o tipo de uma chave):
+  sobe o número maior, e os dois leitores passam a aceitar as duas versões.
+- Qualquer alteração de campo precisa ser avisada a quem mantém a extensão
+  antes de PDFs novos começarem a circular.
+
+Hoje nenhum leitor consulta o número: o "Carregar rascunho" aceita qualquer
+JSON sem olhar `versao_fluxo`, e a extensão ainda não lê esta parte. Isso basta
+enquanto só existe um formato em circulação; o primeiro corte incompatível
+depois da publicação é a hora de fazer os leitores ramificarem pela versão.
 
 ## Licenças de terceiros
 
